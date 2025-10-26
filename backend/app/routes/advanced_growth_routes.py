@@ -3,15 +3,22 @@ Advanced Growth Tracking API Routes
 Comprehensive plant growth monitoring with AI analysis
 """
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime, timedelta
+import uuid
+import os
+from pathlib import Path
 
 from app.services.advanced_growth_tracking import AdvancedGrowthTrackingService
 from app.services.supabase_client import get_supabase_client
 
 router = APIRouter()
+
+# Ensure uploads directory exists
+UPLOAD_DIR = Path("uploads/plots")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # ============================================================
 # REQUEST/RESPONSE MODELS
@@ -41,6 +48,196 @@ class DiagnosePestDiseaseRequest(BaseModel):
     plot_id: str
     image_url: str
     location: LocationModel
+
+class ManualPlotCreationRequest(BaseModel):
+    crop_name: str
+    plot_name: str
+    planting_date: str  # ISO format
+    latitude: float
+    longitude: float
+    area_size: Optional[float] = None
+    notes: Optional[str] = None
+    soil_type: Optional[str] = None
+
+# ============================================================
+# IMAGE UPLOAD ENDPOINTS
+# ============================================================
+
+@router.post("/upload/plot-image")
+async def upload_plot_image(
+    file: UploadFile = File(...),
+    user_id: str = Form(...),
+    image_type: str = Form("initial")  # initial, progress, soil, pest, harvest
+):
+    """
+    Upload plot image (initial, progress, soil, pest, or harvest photo)
+    
+    Returns URL to uploaded image
+    """
+    try:
+        # Validate file type
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Generate unique filename
+        file_extension = file.filename.split('.')[-1]
+        unique_filename = f"{user_id}_{uuid.uuid4()}.{file_extension}"
+        file_path = UPLOAD_DIR / unique_filename
+        
+        # Save file
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Return URL (adjust base URL as needed)
+        image_url = f"http://localhost:8000/uploads/plots/{unique_filename}"
+        
+        return {
+            "success": True,
+            "image_url": image_url,
+            "filename": unique_filename,
+            "image_type": image_type
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/plots/create-manual")
+async def create_plot_manual(
+    user_id: str = Form(...),
+    crop_name: str = Form(...),
+    plot_name: str = Form(...),
+    planting_date: str = Form(...),
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    area_size: Optional[float] = Form(None),
+    notes: Optional[str] = Form(None),
+    soil_type: Optional[str] = Form(None),
+    initial_image: Optional[UploadFile] = File(None),
+    soil_image: Optional[UploadFile] = File(None)
+):
+    """
+    Create plot with manual data entry and optional image uploads
+    
+    Accepts:
+    - Form data for plot details
+    - Optional initial plant image
+    - Optional soil image
+    
+    Returns:
+    - Created plot with scheduled events
+    """
+    try:
+        supabase = get_supabase_client()
+        
+        # Upload images if provided
+        initial_image_url = None
+        soil_image_url = None
+        
+        if initial_image:
+            # Save initial image
+            file_extension = initial_image.filename.split('.')[-1]
+            unique_filename = f"{user_id}_initial_{uuid.uuid4()}.{file_extension}"
+            file_path = UPLOAD_DIR / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                content = await initial_image.read()
+                buffer.write(content)
+            
+            initial_image_url = f"http://localhost:8000/uploads/plots/{unique_filename}"
+        
+        if soil_image:
+            # Save soil image
+            file_extension = soil_image.filename.split('.')[-1]
+            unique_filename = f"{user_id}_soil_{uuid.uuid4()}.{file_extension}"
+            file_path = UPLOAD_DIR / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                content = await soil_image.read()
+                buffer.write(content)
+            
+            soil_image_url = f"http://localhost:8000/uploads/plots/{unique_filename}"
+        
+        # Create plot in database
+        plot_id = str(uuid.uuid4())
+        plot_data = {
+            "id": plot_id,
+            "user_id": user_id,
+            "crop_name": crop_name,
+            "plot_name": plot_name,
+            "planting_date": planting_date,
+            "location": {
+                "latitude": latitude,
+                "longitude": longitude
+            },
+            "area_size": area_size,
+            "notes": notes,
+            "initial_image_url": initial_image_url or "https://via.placeholder.com/400x300?text=No+Image",
+            "soil_image_url": soil_image_url,
+            "setup_completed_at": datetime.utcnow().isoformat(),
+            "soil_analysis": {
+                "soil_type": soil_type or "Not analyzed",
+                "manually_entered": True
+            }
+        }
+        
+        result = supabase.table('digital_plots').insert(plot_data).execute()
+        
+        # Create initial scheduled events for the plot
+        from ..services.growth_calendar_integration import generate_seasonal_calendar
+        
+        try:
+            calendar_events = await generate_seasonal_calendar(
+                plot_id=plot_id,
+                user_id=user_id,
+                crop_name=crop_name,
+                planting_date=planting_date,
+                location={"latitude": latitude, "longitude": longitude},
+                supabase_client=supabase
+            )
+        except Exception as e:
+            print(f"Calendar generation error: {e}")
+            calendar_events = None
+        
+        # Save uploaded images to plot_images table if provided
+        if initial_image_url or soil_image_url:
+            images_to_insert = []
+            
+            if initial_image_url:
+                images_to_insert.append({
+                    "id": str(uuid.uuid4()),
+                    "plot_id": plot_id,
+                    "user_id": user_id,
+                    "image_url": initial_image_url,
+                    "image_type": "initial",
+                    "description": "Initial plot image",
+                    "captured_at": planting_date
+                })
+            
+            if soil_image_url:
+                images_to_insert.append({
+                    "id": str(uuid.uuid4()),
+                    "plot_id": plot_id,
+                    "user_id": user_id,
+                    "image_url": soil_image_url,
+                    "image_type": "soil",
+                    "description": "Soil sample image",
+                    "captured_at": planting_date
+                })
+            
+            if images_to_insert:
+                supabase.table('plot_images').insert(images_to_insert).execute()
+        
+        return {
+            "success": True,
+            "message": "Plot created successfully!",
+            "plot": result.data[0] if result.data else None,
+            "plot_id": plot_id,
+            "calendar_events": calendar_events
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================
 # 1. DIGITAL PLOT SETUP
@@ -743,6 +940,113 @@ async def delete_event(event_id: str):
 # ============================================================
 # UTILITY ENDPOINTS
 # ============================================================
+
+@router.post("/seed-demo-data/{user_id}")
+async def seed_demo_data(user_id: str):
+    """
+    Create demo plot and events for testing
+    Useful when a user has no plots yet
+    """
+    try:
+        supabase = get_supabase_client()
+        from datetime import timedelta
+        import uuid
+        
+        # Create demo plot
+        plot_id = str(uuid.uuid4())
+        plot_data = {
+            "id": plot_id,
+            "user_id": user_id,
+            "plot_name": "Demo Maize Plot",
+            "crop_name": "Maize",
+            "initial_image_url": "https://example.com/maize-initial.jpg",
+            "planting_date": datetime.utcnow().isoformat(),
+            "location": {
+                "latitude": -1.286389,
+                "longitude": 36.817223
+            },
+            "area_size": 2.5,
+            "notes": "Demo plot for growth tracking",
+            "setup_completed_at": datetime.utcnow().isoformat()
+        }
+        
+        supabase.table('digital_plots').insert(plot_data).execute()
+        
+        # Create demo events
+        events = [
+            {
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "event_type": "farm_practice",
+                "practice_name": "Irrigation",
+                "scheduled_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
+                "status": "scheduled",
+                "description": "Water the crops - soil moisture is low",
+                "priority": "urgent",
+                "estimated_labor_hours": 3
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "event_type": "photo_reminder",
+                "practice_name": "Weekly Photo Check",
+                "scheduled_date": (datetime.utcnow() + timedelta(days=2)).isoformat(),
+                "status": "scheduled",
+                "description": "Take photos of plant growth for AI analysis",
+                "priority": "medium",
+                "estimated_labor_hours": 0.5
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "event_type": "farm_practice",
+                "practice_name": "Weeding",
+                "scheduled_date": (datetime.utcnow() + timedelta(days=3)).isoformat(),
+                "status": "scheduled",
+                "description": "Manual weeding to remove competing plants",
+                "priority": "high",
+                "estimated_labor_hours": 4
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "event_type": "alert_action",
+                "practice_name": "Pest Monitoring",
+                "scheduled_date": (datetime.utcnow() + timedelta(days=5)).isoformat(),
+                "status": "scheduled",
+                "description": "Check for fall armyworm and other pests",
+                "priority": "high",
+                "estimated_labor_hours": 1
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "event_type": "farm_practice",
+                "practice_name": "Fertilizer Application",
+                "scheduled_date": (datetime.utcnow() + timedelta(days=7)).isoformat(),
+                "status": "scheduled",
+                "description": "Apply NPK 23:23:0 fertilizer",
+                "priority": "high",
+                "estimated_labor_hours": 2
+            }
+        ]
+        
+        supabase.table('scheduled_events').insert(events).execute()
+        
+        return {
+            "success": True,
+            "message": f"Demo data created successfully for user {user_id}",
+            "plot_id": plot_id,
+            "events_created": len(events)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/health")
 async def health_check():
