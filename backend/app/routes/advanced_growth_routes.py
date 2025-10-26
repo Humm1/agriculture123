@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 from app.services.advanced_growth_tracking import AdvancedGrowthTrackingService
-from app.services.supabase_client import get_supabase_client
+from app.services.supabase_auth import supabase_admin
 
 router = APIRouter()
 
@@ -413,9 +413,7 @@ async def get_plot_details(plot_id: str):
 async def get_user_plots(user_id: str):
     """Get all plots for a user"""
     try:
-        supabase = get_supabase_client()
-        
-        plots = supabase.table('digital_plots')\
+        plots = supabase_admin.table('digital_plots')\
             .select('*')\
             .eq('user_id', user_id)\
             .order('setup_completed_at', desc=True)\
