@@ -329,7 +329,7 @@ async def create_digital_plot(request: CreatePlotRequest, user_id: str = "demo_u
     - Provides soil recommendations
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         result = await service.create_digital_plot(
@@ -366,7 +366,7 @@ async def analyze_soil(image_url: str):
     - Improvement recommendations
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         analysis = await service.analyze_soil_ai(image_url)
@@ -383,7 +383,7 @@ async def analyze_soil(image_url: str):
 async def get_plot_details(plot_id: str):
     """Get comprehensive plot details including setup and logs"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Fetch plot
         plot = supabase.table('digital_plots')\
@@ -449,7 +449,7 @@ async def create_growth_log(request: CreateGrowthLogRequest, user_id: str = "dem
     - Overall health score (1-100)
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         result = await service.create_growth_log(
@@ -483,7 +483,7 @@ async def analyze_plant_health(image_url: str):
     - Biomarkers and alerts
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         analysis = await service.analyze_plant_health_comprehensive(image_url)
@@ -500,7 +500,7 @@ async def analyze_plant_health(image_url: str):
 async def get_plot_logs(plot_id: str, limit: int = 20):
     """Get growth logs for a plot"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         logs = supabase.table('growth_logs')\
             .select('*')\
@@ -530,7 +530,7 @@ async def get_health_dashboard(plot_id: str):
     - Biomarker trends
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get latest log
         latest_log = supabase.table('growth_logs')\
@@ -611,7 +611,7 @@ async def diagnose_pest_disease_comprehensive(request: DiagnosePestDiseaseReques
     - Specific treatment recommendations
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         diagnosis = await service.diagnose_pest_disease_regional(
@@ -671,7 +671,7 @@ async def get_regional_pest_risk(plot_id: str):
     - Risk level
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get plot location
         plot = supabase.table('digital_plots')\
@@ -721,7 +721,7 @@ async def forecast_harvest(plot_id: str):
     - "You can improve to A by treating Early Blight this week"
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         forecast = await service.forecast_harvest_quality(plot_id)
@@ -746,7 +746,7 @@ async def get_quality_prediction(plot_id: str):
     - Potential quality gain from each action
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         service = AdvancedGrowthTrackingService(supabase)
         
         forecast = await service.forecast_harvest_quality(plot_id)
@@ -775,7 +775,7 @@ async def get_plot_calendar(plot_id: str, status: Optional[str] = None):
     Returns all farm practices, photo reminders, and treatments
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         query = supabase.table('scheduled_events')\
             .select('*')\
@@ -823,7 +823,7 @@ async def get_user_upcoming_events(
     Perfect for dashboard "What's Next" section
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         future_date = (datetime.utcnow() + timedelta(days=days_ahead)).isoformat()
         
@@ -873,7 +873,7 @@ async def complete_event(
     - Photos of completed work
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         update_data = {
             "status": "completed",
@@ -913,7 +913,7 @@ async def reschedule_event(
     Useful when weather, health issues, or other factors delay work
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get original date
         event = supabase.table('scheduled_events')\
@@ -958,7 +958,7 @@ async def create_custom_event(
     Allows farmers to add their own practices to calendar
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         event_data = {
             "plot_id": plot_id,
@@ -990,7 +990,7 @@ async def create_custom_event(
 async def delete_event(event_id: str):
     """Delete/cancel scheduled event"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         result = supabase.table('scheduled_events')\
             .delete()\
@@ -1016,7 +1016,7 @@ async def seed_demo_data(user_id: str):
     Useful when a user has no plots yet
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         from datetime import timedelta
         import uuid
         
@@ -1135,7 +1135,7 @@ async def health_check():
 async def get_user_stats(user_id: str):
     """Get user statistics across all plots"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get all user plots
         plots = supabase.table('digital_plots')\
