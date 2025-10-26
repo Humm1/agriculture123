@@ -5,7 +5,7 @@ from app.routes import (
     predict, farms, scan, growth, storage, partners, groups, notifications, 
     climate, village_groups, upload, subscription, premium, payments, regional, 
     farmer_marketplace, buyer_marketplace, auth, location, exchange, market_linkages, 
-    drone_intelligence, ai_prediction
+    drone_intelligence, ai_prediction, model_training_routes, advanced_growth_routes
 )
 from pathlib import Path
 
@@ -46,4 +46,6 @@ app.include_router(exchange.router, prefix='/api/exchange', tags=['Exchange'])
 app.include_router(market_linkages.router, prefix='/api/market-linkages', tags=['Market Linkages'])
 app.include_router(drone_intelligence.router, prefix='/api/drone', tags=['Drone Intelligence'])
 app.include_router(ai_prediction.router, prefix='/api/ai', tags=['AI Prediction'])
+app.include_router(model_training_routes.router, prefix='/api/model-training', tags=['Model Training'])
+app.include_router(advanced_growth_routes.router, prefix='/api/advanced-growth', tags=['Advanced Growth Tracking'])
 
