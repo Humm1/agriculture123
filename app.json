@@ -1,29 +1,67 @@
 {
   "expo": {
-    "name": "agroshield-app",
-    "slug": "agroshield-app",
-    "version": "1.0.0",
+    "name": "Agropulse AI",
+    "slug": "agropulse-ai",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4CAF50"
     },
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.agropulseai.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Agropulse AI needs camera access to scan crops for diseases",
+        "NSPhotoLibraryUsageDescription": "Agropulse AI needs photo library access to upload crop images",
+        "NSLocationWhenInUseUsageDescription": "Agropulse AI needs location access for weather and market data",
+        "NSBluetoothAlwaysUsageDescription": "Agropulse AI needs Bluetooth to connect to storage sensors"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#4CAF50"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.agropulseai.app",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Agropulse AI to access your camera to scan crops"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Agropulse AI to use your location for weather and market data"
+        }
+      ]
+    ]
   }
 }
