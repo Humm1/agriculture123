@@ -186,6 +186,30 @@ async def create_plot_manual(
         from app.services.supabase_auth import supabase_admin
         supabase = supabase_admin
         
+        # CRITICAL: Ensure user profile exists before creating plot
+        # Check if user exists in profiles table
+        print(f"Checking if user {user_id} exists in profiles table...")
+        user_check = supabase.table('profiles').select('id').eq('id', user_id).execute()
+        
+        if not user_check.data or len(user_check.data) == 0:
+            print(f"User {user_id} not found in profiles table - creating profile...")
+            
+            # Create minimal profile for this user
+            try:
+                profile_data = {
+                    'id': user_id,
+                    'user_type': 'farmer',
+                    'created_at': datetime.utcnow().isoformat(),
+                    'email_confirmed': False
+                }
+                supabase.table('profiles').insert(profile_data).execute()
+                print(f"✅ Profile created for user {user_id}")
+            except Exception as profile_error:
+                print(f"⚠️ Could not create profile: {profile_error}")
+                # Try to continue anyway - user might exist but query failed
+        else:
+            print(f"✅ User {user_id} exists in profiles table")
+        
         # Upload images if provided
         initial_image_url = None
         soil_image_url = None
