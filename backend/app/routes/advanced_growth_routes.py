@@ -26,6 +26,33 @@ async def test_endpoint():
         "timestamp": datetime.utcnow().isoformat()
     }
 
+@router.get("/db-test")
+async def test_database():
+    """Test database connection and table existence"""
+    try:
+        from app.services.supabase_auth import supabase_admin
+        
+        # Test 1: Can we connect?
+        test_query = supabase_admin.table('digital_plots').select('id').limit(1).execute()
+        
+        # Test 2: Count plots
+        count_query = supabase_admin.table('digital_plots').select('id', count='exact').execute()
+        
+        return {
+            "success": True,
+            "message": "Database connection working",
+            "table_exists": True,
+            "total_plots": count_query.count if hasattr(count_query, 'count') else "unknown",
+            "can_query": test_query.data is not None
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "message": "Database connection failed - table may not exist"
+        }
+
 # Ensure uploads directory exists
 UPLOAD_DIR = Path("uploads/plots")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
