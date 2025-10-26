@@ -344,10 +344,6 @@ CREATE INDEX idx_forecasts_plot_id ON harvest_forecasts(plot_id);
 CREATE INDEX idx_forecasts_user_id ON harvest_forecasts(user_id);
 CREATE INDEX idx_forecasts_estimated_date ON harvest_forecasts((harvest_forecast->>'estimated_date'));
 
--- ============================================================
--- 5. SCHEDULED EVENTS TABLE (AI Calendar Integration)
--- Auto-scheduled farm practices based on growth tracking
--- ============================================================
 
 CREATE TABLE scheduled_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -425,7 +421,6 @@ CREATE TABLE scheduled_events (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Indexes for performance
 CREATE INDEX idx_scheduled_events_plot_id ON scheduled_events(plot_id);
 CREATE INDEX idx_scheduled_events_user_id ON scheduled_events(user_id);
 CREATE INDEX idx_scheduled_events_scheduled_date ON scheduled_events(scheduled_date);
@@ -434,20 +429,14 @@ CREATE INDEX idx_scheduled_events_event_type ON scheduled_events(event_type);
 CREATE INDEX idx_scheduled_events_priority ON scheduled_events(priority);
 CREATE INDEX idx_scheduled_events_source ON scheduled_events(source);
 
--- Composite indexes for common queries
 CREATE INDEX idx_scheduled_events_user_status_date ON scheduled_events(user_id, status, scheduled_date);
 CREATE INDEX idx_scheduled_events_plot_status_date ON scheduled_events(plot_id, status, scheduled_date);
 
--- ============================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- ============================================================
 
--- Enable RLS
 ALTER TABLE digital_plots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE growth_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pest_disease_diagnoses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE harvest_forecasts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE scheduled_events ENABLE ROW LEVEL SECURITY;
 
 -- Digital Plots Policies
 CREATE POLICY "Users can view their own plots"
