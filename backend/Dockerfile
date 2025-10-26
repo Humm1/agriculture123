@@ -13,8 +13,12 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libgl1 \
     libglib2.0-0 \
+    libgl1-mesa-dri \
+    libglvnd0 \
+    libglx0 \
+    libglapi-mesa \
+    libegl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python packages
