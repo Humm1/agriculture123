@@ -13,17 +13,29 @@ from pathlib import Path
 
 # Supabase configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rwspbvgmmxabglptljkg.supabase.co")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
 
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+# Only initialize Supabase client if we have a valid key
+if SUPABASE_SERVICE_KEY:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+else:
+    supabase = None
+    print("WARNING: Supabase client not initialized - missing SUPABASE_SERVICE_ROLE_KEY")
+
 
 
 class DataCollectionService:
     """Service to collect and prepare data for model training"""
     
     def __init__(self):
-        self.supabase = supabase
+        # Use global supabase or create new client with service key
+        service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+        if service_key:
+            self.supabase = create_client(SUPABASE_URL, service_key)
+        else:
+            self.supabase = None
+            print("WARNING: DataCollectionService - No Supabase key available")
+        
         self.data_dir = Path("training_data")
         self.data_dir.mkdir(exist_ok=True)
     

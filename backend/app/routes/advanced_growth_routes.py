@@ -16,6 +16,16 @@ from app.services.supabase_client import get_supabase_client
 
 router = APIRouter()
 
+# Test endpoint to verify routes are working
+@router.get("/test")
+async def test_endpoint():
+    """Simple test endpoint to verify routes are registered"""
+    return {
+        "success": True,
+        "message": "Advanced growth routes are working!",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 # Ensure uploads directory exists
 UPLOAD_DIR = Path("uploads/plots")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
