@@ -1,0 +1,41 @@
+# Testing Requirements
+# Install with: pip install -r requirements-test.txt
+
+# Core testing framework
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+pytest-asyncio>=0.21.1
+
+# Coverage reporting
+coverage>=7.3.0
+
+# Mocking and fixtures
+faker>=19.6.2
+factory-boy>=3.3.0
+
+# API testing
+requests-mock>=1.11.0
+httpx>=0.24.1
+
+# Performance testing
+locust>=2.15.1
+pytest-benchmark>=4.0.0
+
+# Code quality
+pylint>=2.17.5
+flake8>=6.1.0
+black>=23.7.0
+mypy>=1.5.1
+
+# Type checking
+types-requests>=2.31.0
+
+# Database testing (if needed)
+pytest-postgresql>=5.0.0
+
+# Async testing
+aioresponses>=0.7.4
+
+# Snapshot testing
+syrupy>=4.0.8

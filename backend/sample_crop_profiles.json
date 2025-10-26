@@ -1,0 +1,80 @@
+{
+  "maize": {
+    "temperature": {
+      "min": 10,
+      "max": 25,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "min": 50,
+      "max": 70,
+      "unit": "percent"
+    },
+    "notes": "Store maize in cool, dry conditions to prevent mold and insect damage."
+  },
+  "potatoes": {
+    "temperature": {
+      "min": 4,
+      "max": 10,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "min": 85,
+      "max": 95,
+      "unit": "percent"
+    },
+    "notes": "Potatoes need cold storage with high humidity to prevent sprouting and shrinkage."
+  },
+  "rice": {
+    "temperature": {
+      "min": 12,
+      "max": 18,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "min": 60,
+      "max": 70,
+      "unit": "percent"
+    },
+    "notes": "Rice should be stored in cool, moderately humid conditions to prevent pest infestation."
+  },
+  "cassava": {
+    "temperature": {
+      "min": 0,
+      "max": 5,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "min": 85,
+      "max": 90,
+      "unit": "percent"
+    },
+    "notes": "Fresh cassava roots deteriorate quickly. Store at low temperatures with high humidity."
+  },
+  "beans": {
+    "temperature": {
+      "min": 10,
+      "max": 20,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "min": 50,
+      "max": 65,
+      "unit": "percent"
+    },
+    "notes": "Dry beans should be kept in cool, dry storage to prevent mold and insect damage."
+  },
+  "onions": {
+    "temperature": {
+      "min": 0,
+      "max": 4,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "min": 65,
+      "max": 70,
+      "unit": "percent"
+    },
+    "notes": "Onions need cold, low-humidity storage to prevent sprouting and decay."
+  }
+}
