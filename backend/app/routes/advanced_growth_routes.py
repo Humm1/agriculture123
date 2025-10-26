@@ -129,6 +129,21 @@ async def create_plot_manual(
     Returns:
     - Created plot with scheduled events
     """
+    print("=" * 60)
+    print("CREATE PLOT MANUAL - REQUEST RECEIVED")
+    print("=" * 60)
+    print(f"User ID: {user_id}")
+    print(f"Plot Name: {plot_name}")
+    print(f"Crop Name: {crop_name}")
+    print(f"Planting Date: {planting_date}")
+    print(f"Location: ({latitude}, {longitude})")
+    print(f"Area Size: {area_size}")
+    print(f"Notes: {notes}")
+    print(f"Soil Type: {soil_type}")
+    print(f"Initial Image: {initial_image.filename if initial_image else 'None'}")
+    print(f"Soil Image: {soil_image.filename if soil_image else 'None'}")
+    print("=" * 60)
+    
     try:
         supabase = get_supabase_client()
         
@@ -187,7 +202,9 @@ async def create_plot_manual(
             }
         }
         
+        print(f"Inserting plot into database: {plot_data}")
         result = supabase.table('digital_plots').insert(plot_data).execute()
+        print(f"Plot insert result: {result.data}")
         
         # Create initial scheduled events for the plot
         from ..services.growth_calendar_integration import generate_seasonal_calendar
@@ -244,6 +261,13 @@ async def create_plot_manual(
                     print(f"Error inserting images to plot_images table: {img_error}")
                     # Don't fail the whole request if image insert fails
                     pass
+        
+        print("=" * 60)
+        print("CREATE PLOT MANUAL - SUCCESS")
+        print(f"Plot ID: {plot_id}")
+        print(f"Initial Image URL: {initial_image_url or 'None'}")
+        print(f"Soil Image URL: {soil_image_url or 'None'}")
+        print("=" * 60)
         
         return {
             "success": True,
