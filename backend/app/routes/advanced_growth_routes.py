@@ -319,10 +319,10 @@ async def create_plot(
         # Create initial scheduled events for the plot (skip for demo plots unless requested)
         calendar_events = None
         if not is_demo:  # Only auto-generate calendar for real plots
-            from ..services.growth_calendar_integration import generate_seasonal_calendar
+            from ..services.growth_calendar_integration import schedule_full_season_calendar
             
             try:
-                calendar_events = await generate_seasonal_calendar(
+                calendar_events = await schedule_full_season_calendar(
                     plot_id=plot_id,
                     user_id=user_id,
                     crop_name=crop_name,
@@ -807,10 +807,10 @@ async def edit_plot(
         if is_demo == False and existing_plot.get('is_demo') == True:
             print("🗓️ Generating calendar events for newly converted real plot...")
             try:
-                from ..services.growth_calendar_integration import generate_seasonal_calendar
+                from ..services.growth_calendar_integration import schedule_full_season_calendar
                 
                 updated_plot = result.data[0] if result.data else existing_plot
-                calendar_events = await generate_seasonal_calendar(
+                calendar_events = await schedule_full_season_calendar(
                     plot_id=plot_id,
                     user_id=user_id,
                     crop_name=updated_plot.get('crop_name'),
