@@ -145,7 +145,9 @@ async def create_plot_manual(
     print("=" * 60)
     
     try:
-        supabase = get_supabase_client()
+        # Use service role client to bypass RLS for backend operations
+        from app.services.supabase_auth import supabase_admin
+        supabase = supabase_admin
         
         # Upload images if provided
         initial_image_url = None
@@ -203,8 +205,16 @@ async def create_plot_manual(
         }
         
         print(f"Inserting plot into database: {plot_data}")
-        result = supabase.table('digital_plots').insert(plot_data).execute()
-        print(f"Plot insert result: {result.data}")
+        
+        try:
+            result = supabase.table('digital_plots').insert(plot_data).execute()
+            print(f"Plot insert SUCCESS - result: {result.data}")
+        except Exception as db_error:
+            print(f"ERROR inserting plot into database: {db_error}")
+            print(f"Error type: {type(db_error)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
         
         # Create initial scheduled events for the plot
         from ..services.growth_calendar_integration import generate_seasonal_calendar
@@ -277,8 +287,17 @@ async def create_plot_manual(
             "calendar_events": calendar_events
         }
     
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print("=" * 60)
+        print("CREATE PLOT MANUAL - FATAL ERROR")
+        print(f"Error: {e}")
+        print(f"Error type: {type(e)}")
+        print("=" * 60)
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 # ============================================================
 # 1. DIGITAL PLOT SETUP
