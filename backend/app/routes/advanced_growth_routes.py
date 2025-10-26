@@ -89,8 +89,10 @@ async def upload_plot_image(
             content = await file.read()
             buffer.write(content)
         
-        # Return URL (adjust base URL as needed)
-        image_url = f"http://localhost:8000/uploads/plots/{unique_filename}"
+        # Return URL with proper base URL
+        # Use environment variable or default to DigitalOcean URL
+        base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+        image_url = f"{base_url}/uploads/plots/{unique_filename}"
         
         return {
             "success": True,
@@ -144,7 +146,9 @@ async def create_plot_manual(
                 content = await initial_image.read()
                 buffer.write(content)
             
-            initial_image_url = f"http://localhost:8000/uploads/plots/{unique_filename}"
+            base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+            initial_image_url = f"{base_url}/uploads/plots/{unique_filename}"
+            print(f"Initial image saved: {initial_image_url}")
         
         if soil_image:
             # Save soil image
@@ -156,7 +160,9 @@ async def create_plot_manual(
                 content = await soil_image.read()
                 buffer.write(content)
             
-            soil_image_url = f"http://localhost:8000/uploads/plots/{unique_filename}"
+            base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+            soil_image_url = f"{base_url}/uploads/plots/{unique_filename}"
+            print(f"Soil image saved: {soil_image_url}")
         
         # Create plot in database
         plot_id = str(uuid.uuid4())
@@ -204,7 +210,7 @@ async def create_plot_manual(
             images_to_insert = []
             
             if initial_image_url:
-                images_to_insert.append({
+                image_record = {
                     "id": str(uuid.uuid4()),
                     "plot_id": plot_id,
                     "user_id": user_id,
@@ -212,10 +218,12 @@ async def create_plot_manual(
                     "image_type": "initial",
                     "description": "Initial plot image",
                     "captured_at": planting_date
-                })
+                }
+                images_to_insert.append(image_record)
+                print(f"Inserting initial image record: {image_record}")
             
             if soil_image_url:
-                images_to_insert.append({
+                image_record = {
                     "id": str(uuid.uuid4()),
                     "plot_id": plot_id,
                     "user_id": user_id,
@@ -223,10 +231,19 @@ async def create_plot_manual(
                     "image_type": "soil",
                     "description": "Soil sample image",
                     "captured_at": planting_date
-                })
+                }
+                images_to_insert.append(image_record)
+                print(f"Inserting soil image record: {image_record}")
             
             if images_to_insert:
-                supabase.table('plot_images').insert(images_to_insert).execute()
+                try:
+                    image_result = supabase.table('plot_images').insert(images_to_insert).execute()
+                    print(f"Images inserted successfully: {len(images_to_insert)} images")
+                    print(f"Insert result: {image_result.data}")
+                except Exception as img_error:
+                    print(f"Error inserting images to plot_images table: {img_error}")
+                    # Don't fail the whole request if image insert fails
+                    pass
         
         return {
             "success": True,
