@@ -141,44 +141,63 @@ async def upload_plot_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/plots/create-manual")
-async def create_plot_manual(
+@router.post("/plots")
+async def create_plot(
     user_id: str = Form(...),
     crop_name: str = Form(...),
     plot_name: str = Form(...),
     planting_date: str = Form(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
+    is_demo: bool = Form(False),  # NEW: Flag for demo plots
     area_size: Optional[float] = Form(None),
     notes: Optional[str] = Form(None),
     soil_type: Optional[str] = Form(None),
     initial_image: Optional[UploadFile] = File(None),
-    soil_image: Optional[UploadFile] = File(None)
+    soil_image: Optional[UploadFile] = File(None),
+    additional_images: Optional[List[UploadFile]] = File(None)  # NEW: Multiple additional photos
 ):
     """
-    Create plot with manual data entry and optional image uploads
+    UNIFIED PLOT CREATION ENDPOINT
     
-    Accepts:
-    - Form data for plot details
-    - Optional initial plant image
-    - Optional soil image
+    Create a plot (demo or real) with support for:
+    - Multiple crops per farmer (no limit)
+    - Demo plots (editable templates, can be converted to real plots)
+    - Real plots (actual farm plots)
+    - Multiple photo uploads (initial, soil, and additional photos)
+    
+    Parameters:
+    - user_id: User's unique ID
+    - crop_name: Name of the crop (e.g., "Maize", "Tomatoes", "Beans")
+    - plot_name: Custom name for the plot
+    - planting_date: ISO format date
+    - latitude, longitude: Plot location
+    - is_demo: If True, creates an editable demo plot; if False, creates a real plot
+    - area_size: Plot size in square meters (optional)
+    - notes: Additional notes (optional)
+    - soil_type: Manual soil type entry (optional)
+    - initial_image: Main plot photo (optional)
+    - soil_image: Soil sample photo (optional)
+    - additional_images: List of extra photos (optional)
     
     Returns:
-    - Created plot with scheduled events
+    - Created plot with scheduled events and image URLs
     """
     print("=" * 60)
-    print("CREATE PLOT MANUAL - REQUEST RECEIVED")
+    print(f"{'DEMO' if is_demo else 'REAL'} PLOT CREATION - REQUEST RECEIVED")
     print("=" * 60)
     print(f"User ID: {user_id}")
     print(f"Plot Name: {plot_name}")
     print(f"Crop Name: {crop_name}")
     print(f"Planting Date: {planting_date}")
     print(f"Location: ({latitude}, {longitude})")
+    print(f"Is Demo: {is_demo}")
     print(f"Area Size: {area_size}")
     print(f"Notes: {notes}")
     print(f"Soil Type: {soil_type}")
     print(f"Initial Image: {initial_image.filename if initial_image else 'None'}")
     print(f"Soil Image: {soil_image.filename if soil_image else 'None'}")
+    print(f"Additional Images: {len(additional_images) if additional_images else 0}")
     print("=" * 60)
     
     try:
@@ -187,14 +206,12 @@ async def create_plot_manual(
         supabase = supabase_admin
         
         # CRITICAL: Ensure user profile exists before creating plot
-        # Check if user exists in profiles table
         print(f"Checking if user {user_id} exists in profiles table...")
         user_check = supabase.table('profiles').select('id').eq('id', user_id).execute()
         
         if not user_check.data or len(user_check.data) == 0:
             print(f"User {user_id} not found in profiles table - creating profile...")
             
-            # Create minimal profile for this user
             try:
                 profile_data = {
                     'id': user_id,
@@ -206,16 +223,15 @@ async def create_plot_manual(
                 print(f"✅ Profile created for user {user_id}")
             except Exception as profile_error:
                 print(f"⚠️ Could not create profile: {profile_error}")
-                # Try to continue anyway - user might exist but query failed
         else:
             print(f"✅ User {user_id} exists in profiles table")
         
         # Upload images if provided
         initial_image_url = None
         soil_image_url = None
+        additional_image_urls = []
         
         if initial_image:
-            # Save initial image
             file_extension = initial_image.filename.split('.')[-1]
             unique_filename = f"{user_id}_initial_{uuid.uuid4()}.{file_extension}"
             file_path = UPLOAD_DIR / unique_filename
@@ -229,7 +245,6 @@ async def create_plot_manual(
             print(f"Initial image saved: {initial_image_url}")
         
         if soil_image:
-            # Save soil image
             file_extension = soil_image.filename.split('.')[-1]
             unique_filename = f"{user_id}_soil_{uuid.uuid4()}.{file_extension}"
             file_path = UPLOAD_DIR / unique_filename
@@ -241,6 +256,22 @@ async def create_plot_manual(
             base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
             soil_image_url = f"{base_url}/uploads/plots/{unique_filename}"
             print(f"Soil image saved: {soil_image_url}")
+        
+        # NEW: Handle multiple additional images
+        if additional_images:
+            for idx, img_file in enumerate(additional_images):
+                file_extension = img_file.filename.split('.')[-1]
+                unique_filename = f"{user_id}_extra_{idx}_{uuid.uuid4()}.{file_extension}"
+                file_path = UPLOAD_DIR / unique_filename
+                
+                with open(file_path, "wb") as buffer:
+                    content = await img_file.read()
+                    buffer.write(content)
+                
+                base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+                img_url = f"{base_url}/uploads/plots/{unique_filename}"
+                additional_image_urls.append(img_url)
+                print(f"Additional image {idx+1} saved: {img_url}")
         
         # Create plot in database
         plot_id = str(uuid.uuid4())
@@ -256,6 +287,7 @@ async def create_plot_manual(
             },
             "area_size": area_size,
             "notes": notes,
+            "is_demo": is_demo,  # NEW: Demo flag
             "initial_image_url": initial_image_url or "https://via.placeholder.com/400x300?text=No+Image",
             "soil_image_url": soil_image_url,
             "setup_completed_at": datetime.utcnow().isoformat(),
@@ -266,14 +298,12 @@ async def create_plot_manual(
         }
         
         print(f"Inserting plot into database: {plot_data}")
-        print(f"Using Supabase client: {supabase}")
         
         try:
             result = supabase.table('digital_plots').insert(plot_data).execute()
             print(f"Plot insert SUCCESS - result: {result.data}")
-            print(f"Result count: {len(result.data) if result.data else 0}")
             
-            # Verify insertion by fetching the plot
+            # Verify insertion
             verify_result = supabase.table('digital_plots').select('*').eq('id', plot_id).execute()
             print(f"Verification query result: {verify_result.data}")
             
@@ -282,73 +312,75 @@ async def create_plot_manual(
                 
         except Exception as db_error:
             print(f"ERROR inserting plot into database: {db_error}")
-            print(f"Error type: {type(db_error)}")
             import traceback
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
         
-        # Create initial scheduled events for the plot
-        from ..services.growth_calendar_integration import generate_seasonal_calendar
+        # Create initial scheduled events for the plot (skip for demo plots unless requested)
+        calendar_events = None
+        if not is_demo:  # Only auto-generate calendar for real plots
+            from ..services.growth_calendar_integration import generate_seasonal_calendar
+            
+            try:
+                calendar_events = await generate_seasonal_calendar(
+                    plot_id=plot_id,
+                    user_id=user_id,
+                    crop_name=crop_name,
+                    planting_date=planting_date,
+                    location={"latitude": latitude, "longitude": longitude},
+                    supabase_client=supabase
+                )
+            except Exception as e:
+                print(f"Calendar generation error: {e}")
         
-        try:
-            calendar_events = await generate_seasonal_calendar(
-                plot_id=plot_id,
-                user_id=user_id,
-                crop_name=crop_name,
-                planting_date=planting_date,
-                location={"latitude": latitude, "longitude": longitude},
-                supabase_client=supabase
-            )
-        except Exception as e:
-            print(f"Calendar generation error: {e}")
-            calendar_events = None
+        # Save all uploaded images to plot_images table
+        images_to_insert = []
         
-        # Save uploaded images to plot_images table if provided
-        if initial_image_url or soil_image_url:
-            images_to_insert = []
-            
-            if initial_image_url:
-                image_record = {
-                    "id": str(uuid.uuid4()),
-                    "plot_id": plot_id,
-                    "user_id": user_id,
-                    "image_url": initial_image_url,
-                    "image_type": "initial",
-                    "description": "Initial plot image",
-                    "captured_at": planting_date
-                }
-                images_to_insert.append(image_record)
-                print(f"Inserting initial image record: {image_record}")
-            
-            if soil_image_url:
-                image_record = {
-                    "id": str(uuid.uuid4()),
-                    "plot_id": plot_id,
-                    "user_id": user_id,
-                    "image_url": soil_image_url,
-                    "image_type": "soil",
-                    "description": "Soil sample image",
-                    "captured_at": planting_date
-                }
-                images_to_insert.append(image_record)
-                print(f"Inserting soil image record: {image_record}")
-            
-            if images_to_insert:
-                try:
-                    image_result = supabase.table('plot_images').insert(images_to_insert).execute()
-                    print(f"Images inserted successfully: {len(images_to_insert)} images")
-                    print(f"Insert result: {image_result.data}")
-                except Exception as img_error:
-                    print(f"Error inserting images to plot_images table: {img_error}")
-                    # Don't fail the whole request if image insert fails
-                    pass
+        if initial_image_url:
+            images_to_insert.append({
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "image_url": initial_image_url,
+                "image_type": "initial",
+                "description": "Initial plot image",
+                "captured_at": planting_date
+            })
+        
+        if soil_image_url:
+            images_to_insert.append({
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "image_url": soil_image_url,
+                "image_type": "soil",
+                "description": "Soil sample image",
+                "captured_at": planting_date
+            })
+        
+        # NEW: Insert additional images
+        for idx, img_url in enumerate(additional_image_urls):
+            images_to_insert.append({
+                "id": str(uuid.uuid4()),
+                "plot_id": plot_id,
+                "user_id": user_id,
+                "image_url": img_url,
+                "image_type": "progress",
+                "description": f"Additional plot photo {idx+1}",
+                "captured_at": planting_date
+            })
+        
+        if images_to_insert:
+            try:
+                image_result = supabase.table('plot_images').insert(images_to_insert).execute()
+                print(f"✅ Images inserted: {len(images_to_insert)} images")
+            except Exception as img_error:
+                print(f"⚠️ Error inserting images: {img_error}")
         
         print("=" * 60)
-        print("CREATE PLOT MANUAL - SUCCESS")
+        print(f"{'DEMO' if is_demo else 'REAL'} PLOT CREATION - SUCCESS")
         print(f"Plot ID: {plot_id}")
-        print(f"Initial Image URL: {initial_image_url or 'None'}")
-        print(f"Soil Image URL: {soil_image_url or 'None'}")
-        print(f"Result data: {result.data}")
+        print(f"Total Images: {len(images_to_insert)}")
         print("=" * 60)
         
         # Build comprehensive response
@@ -357,30 +389,462 @@ async def create_plot_manual(
             "user_id": user_id,
             "crop_name": crop_name,
             "plot_name": plot_name,
-            "planting_date": planting_date
+            "planting_date": planting_date,
+            "is_demo": is_demo
         }
         
         return {
             "success": True,
-            "message": "Plot created successfully!",
+            "message": f"{'Demo' if is_demo else 'Real'} plot created successfully!",
             "plot": plot_response,
             "plot_id": plot_id,
+            "is_demo": is_demo,
             "calendar_events": calendar_events,
-            "initial_image_url": initial_image_url,
-            "soil_image_url": soil_image_url
+            "images": {
+                "initial": initial_image_url,
+                "soil": soil_image_url,
+                "additional": additional_image_urls
+            },
+            "total_images": len(images_to_insert)
         }
     
     except HTTPException:
-        raise  # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         print("=" * 60)
-        print("CREATE PLOT MANUAL - FATAL ERROR")
+        print(f"{'DEMO' if is_demo else 'REAL'} PLOT CREATION - FATAL ERROR")
         print(f"Error: {e}")
         print(f"Error type: {type(e)}")
         print("=" * 60)
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# LEGACY ENDPOINT - Kept for backward compatibility
+@router.post("/plots/create-manual")
+async def create_plot_manual(
+    user_id: str = Form(...),
+    crop_name: str = Form(...),
+    plot_name: str = Form(...),
+    planting_date: str = Form(...),
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    area_size: Optional[float] = Form(None),
+    notes: Optional[str] = Form(None),
+    soil_type: Optional[str] = Form(None),
+    initial_image: Optional[UploadFile] = File(None),
+    soil_image: Optional[UploadFile] = File(None)
+):
+    """
+    LEGACY: Create plot with manual data entry
+    
+    DEPRECATED: Use POST /plots instead with is_demo=False
+    
+    This endpoint is maintained for backward compatibility.
+    """
+    # Redirect to the new unified endpoint
+    return await create_plot(
+        user_id=user_id,
+        crop_name=crop_name,
+        plot_name=plot_name,
+        planting_date=planting_date,
+        latitude=latitude,
+        longitude=longitude,
+        is_demo=False,
+        area_size=area_size,
+        notes=notes,
+        soil_type=soil_type,
+        initial_image=initial_image,
+        soil_image=soil_image,
+        additional_images=None
+    )
+
+
+# ============================================================
+# PLOT RETRIEVAL ENDPOINTS
+# ============================================================
+
+@router.get("/plots")
+async def get_user_plots(
+    user_id: str,
+    is_demo: Optional[bool] = None,
+    crop_name: Optional[str] = None,
+    status: Optional[str] = None
+):
+    """
+    Get all plots for a user with optional filters
+    
+    Query Parameters:
+    - user_id (required): User's unique ID
+    - is_demo (optional): Filter by demo (true) or real (false) plots. Omit to get all.
+    - crop_name (optional): Filter by specific crop
+    - status (optional): Filter by status (active, harvested, abandoned)
+    
+    Returns:
+    - List of plots matching filters
+    - Supports multiple crops per farmer
+    - Clearly distinguishes demo vs real plots
+    
+    Examples:
+    - GET /plots?user_id=123 → All plots (demo + real)
+    - GET /plots?user_id=123&is_demo=true → Only demo plots
+    - GET /plots?user_id=123&is_demo=false → Only real plots
+    - GET /plots?user_id=123&crop_name=Maize → All maize plots
+    - GET /plots?user_id=123&is_demo=false&status=active → Active real plots
+    """
+    try:
+        from app.services.supabase_auth import supabase_admin
+        supabase = supabase_admin
+        
+        # Build query
+        query = supabase.table('digital_plots').select('*').eq('user_id', user_id)
+        
+        # Apply filters
+        if is_demo is not None:
+            query = query.eq('is_demo', is_demo)
+        if crop_name is not None:
+            query = query.eq('crop_name', crop_name)
+        if status is not None:
+            query = query.eq('status', status)
+        
+        # Order by most recent first
+        query = query.order('created_at', desc=True)
+        
+        result = query.execute()
+        
+        plots = result.data or []
+        
+        # Count by type
+        demo_count = sum(1 for p in plots if p.get('is_demo'))
+        real_count = len(plots) - demo_count
+        
+        # Get unique crops
+        unique_crops = list(set(p.get('crop_name') for p in plots if p.get('crop_name')))
+        
+        return {
+            "success": True,
+            "plots": plots,
+            "total_plots": len(plots),
+            "demo_plots": demo_count,
+            "real_plots": real_count,
+            "unique_crops": unique_crops,
+            "filters_applied": {
+                "is_demo": is_demo,
+                "crop_name": crop_name,
+                "status": status
+            }
+        }
+    
+    except Exception as e:
+        print(f"Error fetching plots: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/plots/{plot_id}")
+async def get_plot_details(plot_id: str, user_id: str):
+    """
+    Get detailed information about a specific plot
+    
+    Returns:
+    - Plot details
+    - All images associated with the plot
+    - Recent growth logs
+    - Scheduled events
+    """
+    try:
+        from app.services.supabase_auth import supabase_admin
+        supabase = supabase_admin
+        
+        # Get plot
+        plot_result = supabase.table('digital_plots').select('*').eq('id', plot_id).eq('user_id', user_id).execute()
+        
+        if not plot_result.data or len(plot_result.data) == 0:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot = plot_result.data[0]
+        
+        # Get all images for this plot
+        images_result = supabase.table('plot_images').select('*').eq('plot_id', plot_id).order('captured_at', desc=True).execute()
+        images = images_result.data or []
+        
+        # Get recent growth logs
+        logs_result = supabase.table('growth_logs').select('*').eq('plot_id', plot_id).order('timestamp', desc=True).limit(5).execute()
+        logs = logs_result.data or []
+        
+        # Get upcoming events
+        events_result = supabase.table('scheduled_events').select('*').eq('plot_id', plot_id).eq('status', 'scheduled').order('scheduled_date').limit(10).execute()
+        events = events_result.data or []
+        
+        return {
+            "success": True,
+            "plot": plot,
+            "is_demo": plot.get('is_demo', False),
+            "images": images,
+            "recent_logs": logs,
+            "upcoming_events": events,
+            "total_images": len(images),
+            "total_logs": len(logs)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching plot details: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# PLOT EDITING ENDPOINT
+# ============================================================
+
+@router.patch("/plots/{plot_id}")
+async def edit_plot(
+    plot_id: str,
+    user_id: str = Form(...),
+    crop_name: Optional[str] = Form(None),
+    plot_name: Optional[str] = Form(None),
+    planting_date: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    is_demo: Optional[bool] = Form(None),  # Can convert demo→real or real→demo
+    area_size: Optional[float] = Form(None),
+    notes: Optional[str] = Form(None),
+    soil_type: Optional[str] = Form(None),
+    status: Optional[str] = Form(None),  # active, harvested, abandoned
+    initial_image: Optional[UploadFile] = File(None),  # Replace initial image
+    soil_image: Optional[UploadFile] = File(None),  # Replace soil image
+    additional_images: Optional[List[UploadFile]] = File(None)  # Add more photos
+):
+    """
+    EDIT EXISTING PLOT
+    
+    Update any plot details including:
+    - Converting demo plots to real plots (is_demo: true → false)
+    - Converting real plots to demo templates (is_demo: false → true)
+    - Changing crop type, plot name, dates, location
+    - Updating or adding photos
+    - Changing status (active, harvested, abandoned)
+    
+    Only provide the fields you want to update - all are optional.
+    
+    Special use cases:
+    1. Convert demo to real: Set is_demo=false on a demo plot
+    2. Update crop on existing plot: Change crop_name
+    3. Add more photos: Upload additional_images
+    4. Mark plot as harvested: Set status="harvested"
+    
+    Returns: Updated plot data
+    """
+    print("=" * 60)
+    print(f"EDIT PLOT - REQUEST RECEIVED")
+    print("=" * 60)
+    print(f"Plot ID: {plot_id}")
+    print(f"User ID: {user_id}")
+    print(f"Updates: crop_name={crop_name}, plot_name={plot_name}, is_demo={is_demo}, status={status}")
+    print("=" * 60)
+    
+    try:
+        from app.services.supabase_auth import supabase_admin
+        supabase = supabase_admin
+        
+        # Verify plot exists and belongs to user
+        plot_check = supabase.table('digital_plots').select('*').eq('id', plot_id).eq('user_id', user_id).execute()
+        
+        if not plot_check.data or len(plot_check.data) == 0:
+            raise HTTPException(status_code=404, detail=f"Plot {plot_id} not found or doesn't belong to user {user_id}")
+        
+        existing_plot = plot_check.data[0]
+        print(f"Existing plot found: {existing_plot.get('plot_name')} (is_demo: {existing_plot.get('is_demo', False)})")
+        
+        # Build update dict with only provided fields
+        updates = {}
+        
+        if crop_name is not None:
+            updates['crop_name'] = crop_name
+        if plot_name is not None:
+            updates['plot_name'] = plot_name
+        if planting_date is not None:
+            updates['planting_date'] = planting_date
+        if area_size is not None:
+            updates['area_size'] = area_size
+        if notes is not None:
+            updates['notes'] = notes
+        if status is not None:
+            updates['status'] = status
+        if is_demo is not None:
+            updates['is_demo'] = is_demo
+            if is_demo == False and existing_plot.get('is_demo') == True:
+                print("🔄 Converting DEMO plot → REAL plot")
+            elif is_demo == True and existing_plot.get('is_demo') == False:
+                print("🔄 Converting REAL plot → DEMO plot")
+        
+        # Update location if both lat/lon provided
+        if latitude is not None and longitude is not None:
+            updates['location'] = {
+                "latitude": latitude,
+                "longitude": longitude
+            }
+        
+        # Update soil type
+        if soil_type is not None:
+            existing_soil = existing_plot.get('soil_analysis', {})
+            updates['soil_analysis'] = {
+                **existing_soil,
+                "soil_type": soil_type,
+                "manually_entered": True
+            }
+        
+        # Handle image uploads
+        initial_image_url = None
+        soil_image_url = None
+        additional_image_urls = []
+        
+        if initial_image:
+            file_extension = initial_image.filename.split('.')[-1]
+            unique_filename = f"{user_id}_initial_{uuid.uuid4()}.{file_extension}"
+            file_path = UPLOAD_DIR / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                content = await initial_image.read()
+                buffer.write(content)
+            
+            base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+            initial_image_url = f"{base_url}/uploads/plots/{unique_filename}"
+            updates['initial_image_url'] = initial_image_url
+            print(f"New initial image: {initial_image_url}")
+        
+        if soil_image:
+            file_extension = soil_image.filename.split('.')[-1]
+            unique_filename = f"{user_id}_soil_{uuid.uuid4()}.{file_extension}"
+            file_path = UPLOAD_DIR / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                content = await soil_image.read()
+                buffer.write(content)
+            
+            base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+            soil_image_url = f"{base_url}/uploads/plots/{unique_filename}"
+            updates['soil_image_url'] = soil_image_url
+            print(f"New soil image: {soil_image_url}")
+        
+        # Handle additional images
+        if additional_images:
+            for idx, img_file in enumerate(additional_images):
+                file_extension = img_file.filename.split('.')[-1]
+                unique_filename = f"{user_id}_extra_{idx}_{uuid.uuid4()}.{file_extension}"
+                file_path = UPLOAD_DIR / unique_filename
+                
+                with open(file_path, "wb") as buffer:
+                    content = await img_file.read()
+                    buffer.write(content)
+                
+                base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
+                img_url = f"{base_url}/uploads/plots/{unique_filename}"
+                additional_image_urls.append(img_url)
+        
+        # Update timestamp
+        updates['updated_at'] = datetime.utcnow().isoformat()
+        
+        # Apply updates to database
+        if updates:
+            print(f"Applying updates: {list(updates.keys())}")
+            result = supabase.table('digital_plots').update(updates).eq('id', plot_id).execute()
+            print(f"✅ Plot updated successfully")
+        else:
+            print("⚠️ No updates to apply")
+            result = plot_check
+        
+        # Insert additional images to plot_images table
+        if initial_image_url or soil_image_url or additional_image_urls:
+            images_to_insert = []
+            
+            if initial_image_url:
+                images_to_insert.append({
+                    "id": str(uuid.uuid4()),
+                    "plot_id": plot_id,
+                    "user_id": user_id,
+                    "image_url": initial_image_url,
+                    "image_type": "initial",
+                    "description": "Updated initial image",
+                    "captured_at": datetime.utcnow().isoformat()
+                })
+            
+            if soil_image_url:
+                images_to_insert.append({
+                    "id": str(uuid.uuid4()),
+                    "plot_id": plot_id,
+                    "user_id": user_id,
+                    "image_url": soil_image_url,
+                    "image_type": "soil",
+                    "description": "Updated soil image",
+                    "captured_at": datetime.utcnow().isoformat()
+                })
+            
+            for idx, img_url in enumerate(additional_image_urls):
+                images_to_insert.append({
+                    "id": str(uuid.uuid4()),
+                    "plot_id": plot_id,
+                    "user_id": user_id,
+                    "image_url": img_url,
+                    "image_type": "progress",
+                    "description": f"Additional photo {idx+1}",
+                    "captured_at": datetime.utcnow().isoformat()
+                })
+            
+            if images_to_insert:
+                try:
+                    supabase.table('plot_images').insert(images_to_insert).execute()
+                    print(f"✅ {len(images_to_insert)} new images added")
+                except Exception as img_error:
+                    print(f"⚠️ Error inserting images: {img_error}")
+        
+        # If converting demo to real, generate calendar events
+        if is_demo == False and existing_plot.get('is_demo') == True:
+            print("🗓️ Generating calendar events for newly converted real plot...")
+            try:
+                from ..services.growth_calendar_integration import generate_seasonal_calendar
+                
+                updated_plot = result.data[0] if result.data else existing_plot
+                calendar_events = await generate_seasonal_calendar(
+                    plot_id=plot_id,
+                    user_id=user_id,
+                    crop_name=updated_plot.get('crop_name'),
+                    planting_date=updated_plot.get('planting_date'),
+                    location=updated_plot.get('location'),
+                    supabase_client=supabase
+                )
+                print(f"✅ Calendar events created: {len(calendar_events) if calendar_events else 0}")
+            except Exception as cal_error:
+                print(f"⚠️ Calendar generation error: {cal_error}")
+        
+        print("=" * 60)
+        print("EDIT PLOT - SUCCESS")
+        print("=" * 60)
+        
+        return {
+            "success": True,
+            "message": "Plot updated successfully!",
+            "plot": result.data[0] if result.data else existing_plot,
+            "updates_applied": list(updates.keys()),
+            "new_images_count": len(additional_image_urls) + (1 if initial_image_url else 0) + (1 if soil_image_url else 0)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("=" * 60)
+        print("EDIT PLOT - ERROR")
+        print(f"Error: {e}")
+        print("=" * 60)
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ============================================================
 # 1. DIGITAL PLOT SETUP
@@ -1086,14 +1550,17 @@ async def delete_event(event_id: str):
 async def seed_demo_data(user_id: str):
     """
     Create demo plot and events for testing
-    Useful when a user has no plots yet
+    
+    DEPRECATED: Use POST /plots with is_demo=true instead
+    
+    Useful when a user has no plots yet to show them how the system works
     """
     try:
         supabase = supabase_admin
         from datetime import timedelta
         import uuid
         
-        # Create demo plot
+        # Create demo plot with is_demo=true
         plot_id = str(uuid.uuid4())
         plot_data = {
             "id": plot_id,
@@ -1107,7 +1574,8 @@ async def seed_demo_data(user_id: str):
                 "longitude": 36.817223
             },
             "area_size": 2.5,
-            "notes": "Demo plot for growth tracking",
+            "notes": "Demo plot for growth tracking - You can edit this plot or create your own!",
+            "is_demo": True,  # NEW: Mark as demo plot
             "setup_completed_at": datetime.utcnow().isoformat()
         }
         

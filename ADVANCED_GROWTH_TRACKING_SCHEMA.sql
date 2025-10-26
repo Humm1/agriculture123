@@ -57,6 +57,9 @@ CREATE TABLE digital_plots (
     area_size DECIMAL(10, 2),  -- Square meters
     notes TEXT,
     
+    -- Demo/Real plot flag
+    is_demo BOOLEAN DEFAULT FALSE,  -- Demo plots are editable templates, can be converted to real plots
+    
     -- Status
     status VARCHAR(50) DEFAULT 'active',  -- active, harvested, abandoned
     
@@ -70,6 +73,8 @@ CREATE INDEX idx_digital_plots_user_id ON digital_plots(user_id);
 CREATE INDEX idx_digital_plots_status ON digital_plots(status);
 CREATE INDEX idx_digital_plots_planting_date ON digital_plots(planting_date);
 CREATE INDEX idx_digital_plots_location ON digital_plots USING GIN (location);
+CREATE INDEX idx_digital_plots_is_demo ON digital_plots(is_demo);
+CREATE INDEX idx_digital_plots_user_crop ON digital_plots(user_id, crop_name);
 
 -- ============================================================
 -- 2. GROWTH LOGS TABLE
