@@ -5,7 +5,7 @@ Multi-image upload, AI predictions, fertilizer recommendations, disease tracking
 
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 import json
 import os
