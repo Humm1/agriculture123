@@ -12,7 +12,7 @@ import os
 from uuid import UUID
 
 from app.services.plot_analytics_ai import plot_analytics_ai
-from app.services.supabase_client import get_supabase_client
+from app.services.supabase_auth import supabase_admin
 from app.services.weather_service import get_weather_data  # Assuming you have this
 
 router = APIRouter(prefix="/plot-analytics", tags=["Plot Analytics"])
@@ -46,7 +46,7 @@ async def upload_plot_images(
         analyze_immediately: Whether to run AI analysis right away
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         uploaded_files = []
         analysis_results = []
         
@@ -142,7 +142,7 @@ async def get_plot_analytics(plot_id: str):
     Get comprehensive analytics for a plot including health, diseases, predictions
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Use the SQL function
         result = supabase.rpc('get_plot_analytics', {'plot_uuid': plot_id}).execute()
@@ -166,7 +166,7 @@ async def get_health_history(
 ):
     """Get health metrics history for trend analysis"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         start_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
         
@@ -201,7 +201,7 @@ async def get_fertilizer_recommendation(
     Get fertilizer recommendations comparing organic vs inorganic options
     """
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get plot info
         plot_result = supabase.table('digital_plots')\
@@ -267,7 +267,7 @@ async def get_fertilizer_recommendation(
 async def get_disease_timeline(plot_id: str):
     """Get disease detection and treatment timeline"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         result = supabase.table('disease_timeline')\
             .select('*')\
@@ -294,7 +294,7 @@ async def predict_disease_progression(
 ):
     """Predict how a disease will progress based on weather and conditions"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get plot location for weather forecast
         plot_result = supabase.table('digital_plots')\
@@ -346,7 +346,7 @@ async def analyze_weather_impact(
 ):
     """Analyze weather impact on crop health"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         # Get plot info
         plot_result = supabase.table('digital_plots')\
@@ -413,7 +413,7 @@ async def get_plot_datasets(
 ):
     """Get all uploaded images/datasets for a plot"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         query = supabase.table('plot_datasets')\
             .select('*')\
@@ -447,7 +447,7 @@ async def update_disease_status(
 ):
     """Update disease treatment and progression"""
     try:
-        supabase = get_supabase_client()
+        supabase = supabase_admin
         
         update_data = {
             'updated_at': datetime.utcnow().isoformat()
