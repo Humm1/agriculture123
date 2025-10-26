@@ -5,8 +5,16 @@ Enforces subscription-based feature access across all routes
 
 from functools import wraps
 from fastapi import HTTPException, Header
-from typing import Optional, Callable
-from app.routes.payments import check_feature_access, check_usage_limit
+from typing import Optional, Callable, TYPE_CHECKING
+
+# Lazy import to avoid circular dependency with payments.py
+if TYPE_CHECKING:
+    from app.routes.payments import check_feature_access, check_usage_limit
+
+def _get_payment_helpers():
+    """Lazy load payment helper functions to avoid circular imports"""
+    from app.routes.payments import check_feature_access, check_usage_limit
+    return check_feature_access, check_usage_limit
 
 # ============================================================================
 # DECORATORS FOR FEATURE ACCESS CONTROL
@@ -31,6 +39,7 @@ def require_feature(feature_name: str):
                     detail="User ID required"
                 )
             
+            check_feature_access, _ = _get_payment_helpers()
             access_check = check_feature_access(user_id, feature_name)
             
             if not access_check["has_access"]:
@@ -116,6 +125,7 @@ def check_limit(limit_type: str):
                     detail="User ID required"
                 )
             
+            _, check_usage_limit = _get_payment_helpers()
             limit_check = check_usage_limit(user_id, limit_type)
             
             if not limit_check["within_limit"]:
@@ -162,6 +172,7 @@ class FeatureGuard:
         self.feature_name = feature_name
     
     def __enter__(self):
+        check_feature_access, _ = _get_payment_helpers()
         access_check = check_feature_access(self.user_id, self.feature_name)
         
         if not access_check["has_access"]:
