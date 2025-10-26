@@ -215,10 +215,20 @@ async def create_plot_manual(
         }
         
         print(f"Inserting plot into database: {plot_data}")
+        print(f"Using Supabase client: {supabase}")
         
         try:
             result = supabase.table('digital_plots').insert(plot_data).execute()
             print(f"Plot insert SUCCESS - result: {result.data}")
+            print(f"Result count: {len(result.data) if result.data else 0}")
+            
+            # Verify insertion by fetching the plot
+            verify_result = supabase.table('digital_plots').select('*').eq('id', plot_id).execute()
+            print(f"Verification query result: {verify_result.data}")
+            
+            if not verify_result.data:
+                raise Exception("Plot was not saved to database - RLS policy may be blocking")
+                
         except Exception as db_error:
             print(f"ERROR inserting plot into database: {db_error}")
             print(f"Error type: {type(db_error)}")
@@ -287,14 +297,26 @@ async def create_plot_manual(
         print(f"Plot ID: {plot_id}")
         print(f"Initial Image URL: {initial_image_url or 'None'}")
         print(f"Soil Image URL: {soil_image_url or 'None'}")
+        print(f"Result data: {result.data}")
         print("=" * 60)
+        
+        # Build comprehensive response
+        plot_response = result.data[0] if result.data and len(result.data) > 0 else {
+            "id": plot_id,
+            "user_id": user_id,
+            "crop_name": crop_name,
+            "plot_name": plot_name,
+            "planting_date": planting_date
+        }
         
         return {
             "success": True,
             "message": "Plot created successfully!",
-            "plot": result.data[0] if result.data else None,
+            "plot": plot_response,
             "plot_id": plot_id,
-            "calendar_events": calendar_events
+            "calendar_events": calendar_events,
+            "initial_image_url": initial_image_url,
+            "soil_image_url": soil_image_url
         }
     
     except HTTPException:
