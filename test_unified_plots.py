@@ -19,7 +19,15 @@ BASE_URL = "https://urchin-app-86rjy.ondigitalocean.app/api/advanced-growth"
 # For local testing:
 # BASE_URL = "http://localhost:8000/api/advanced-growth"
 
-TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
+# Test user (use actual user ID from your database)
+# Get a real user ID first
+def get_real_user_id():
+    """Helper to get a real user ID from database"""
+    import uuid
+    # Generate a valid UUID for testing
+    return str(uuid.uuid4())
+
+TEST_USER_ID = get_real_user_id()
 
 def print_section(title):
     """Print a formatted section header"""
