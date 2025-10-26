@@ -804,9 +804,7 @@ def generate_practice_optimization_alert(field_id: str, practice_name: str) -> D
         }
     
     # Return farmer alert
-    return adjustment["farmer_alert"] 
-                  if p["status"] == "pending" and 
-                  datetime.fromisoformat(p["due_date"].replace('Z', '')) < now)
+    return adjustment["farmer_alert"]
     
     return {
         "completion_rate": round((completed / total) * 100, 1) if total > 0 else 0,
