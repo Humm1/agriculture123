@@ -13,7 +13,7 @@ from uuid import UUID
 
 from app.services.plot_analytics_ai import plot_analytics_ai
 from app.services.supabase_auth import supabase_admin
-from app.services.weather_service import get_weather_data  # Assuming you have this
+# from app.services.weather_service import get_weather_data  # TODO: Add when available
 
 router = APIRouter(prefix="/plot-analytics", tags=["Plot Analytics"])
 
@@ -54,9 +54,9 @@ async def upload_plot_images(
         gps_data = json.loads(gps_location) if gps_location else None
         weather_data = json.loads(weather_conditions) if weather_conditions else None
         
-        # Get weather if not provided
-        if not weather_data and gps_data:
-            weather_data = await get_weather_data(gps_data['lat'], gps_data['lng'])
+        # Get weather if not provided (commented out until weather_service is available)
+        # if not weather_data and gps_data:
+        #     weather_data = await get_weather_data(gps_data['lat'], gps_data['lng'])
         
         for file in files:
             # Save file
