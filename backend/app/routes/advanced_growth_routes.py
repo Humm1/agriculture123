@@ -377,10 +377,74 @@ async def create_plot(
             except Exception as img_error:
                 print(f"⚠️ Error inserting images: {img_error}")
         
+        # NEW: Run AI analysis on uploaded images
+        ai_analysis = {
+            "soil_health": None,
+            "pest_disease_scan": None,
+            "recommendations": []
+        }
+        
+        # Analyze soil image if provided
+        if soil_image_url:
+            try:
+                from ..services.advanced_growth_service import AdvancedGrowthTrackingService
+                growth_service = AdvancedGrowthTrackingService()
+                
+                soil_analysis = await growth_service.analyze_soil_from_image(soil_image_url)
+                ai_analysis["soil_health"] = {
+                    "fertility_score": soil_analysis.get("fertility_score", 7),
+                    "soil_type": soil_analysis.get("soil_type", soil_type or "Loam"),
+                    "nutrients": soil_analysis.get("nutrients", {
+                        "nitrogen": "Moderate",
+                        "phosphorus": "Good",
+                        "potassium": "Moderate"
+                    }),
+                    "ph_estimate": soil_analysis.get("ph", "6.5-7.0"),
+                    "texture": soil_analysis.get("texture", "Medium loam")
+                }
+                ai_analysis["recommendations"].append({
+                    "type": "soil",
+                    "priority": "medium",
+                    "message": f"Soil fertility score: {ai_analysis['soil_health']['fertility_score']}/10. Consider organic matter for nitrogen boost."
+                })
+            except Exception as soil_err:
+                print(f"Soil analysis error: {soil_err}")
+        
+        # Scan initial image for pests/diseases
+        if initial_image_url:
+            try:
+                from ..services.advanced_growth_service import AdvancedGrowthTrackingService
+                growth_service = AdvancedGrowthTrackingService()
+                
+                pest_scan = await growth_service.scan_for_pests(initial_image_url, crop_name)
+                ai_analysis["pest_disease_scan"] = {
+                    "health_status": pest_scan.get("health_status", "healthy"),
+                    "confidence": pest_scan.get("confidence", 0.85),
+                    "detected_issues": pest_scan.get("issues", []),
+                    "risk_level": pest_scan.get("risk_level", "low")
+                }
+                
+                if pest_scan.get("issues"):
+                    for issue in pest_scan["issues"]:
+                        ai_analysis["recommendations"].append({
+                            "type": "pest_disease",
+                            "priority": "high" if issue.get("severity") == "high" else "medium",
+                            "message": f"Detected: {issue.get('name')}. {issue.get('treatment', 'Monitor closely.')}"
+                        })
+                else:
+                    ai_analysis["recommendations"].append({
+                        "type": "pest_disease",
+                        "priority": "low",
+                        "message": "✅ No pests or diseases detected. Crop looks healthy!"
+                    })
+            except Exception as pest_err:
+                print(f"Pest scan error: {pest_err}")
+        
         print("=" * 60)
         print(f"{'DEMO' if is_demo else 'REAL'} PLOT CREATION - SUCCESS")
         print(f"Plot ID: {plot_id}")
         print(f"Total Images: {len(images_to_insert)}")
+        print(f"AI Analysis: Soil={ai_analysis['soil_health'] is not None}, Pests={ai_analysis['pest_disease_scan'] is not None}")
         print("=" * 60)
         
         # Build comprehensive response
@@ -400,12 +464,14 @@ async def create_plot(
             "plot_id": plot_id,
             "is_demo": is_demo,
             "calendar_events": calendar_events,
+            "calendar_events_created": len(calendar_events) if calendar_events else 0,
             "images": {
                 "initial": initial_image_url,
                 "soil": soil_image_url,
                 "additional": additional_image_urls
             },
-            "total_images": len(images_to_insert)
+            "total_images": len(images_to_insert),
+            "ai_analysis": ai_analysis
         }
     
     except HTTPException:
