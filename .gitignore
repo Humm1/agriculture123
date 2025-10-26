@@ -42,4 +42,6 @@ uploads/
 .env.local
 .env.example
 backend/.env.example
+frontend/.env.example
+frontend/agroshield-app/.env.example
 .vercel
