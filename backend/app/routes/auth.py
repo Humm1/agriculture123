@@ -154,7 +154,7 @@ async def login(request: LoginRequest):
 
 
 @router.post("/logout")
-async def logout(current_user: dict = Depends(get_current_user)):
+async def logout(authorization: str = Header(None)):
     """
     Sign out current user
     
@@ -164,8 +164,15 @@ async def logout(current_user: dict = Depends(get_current_user)):
     Returns:
     - Logout status
     """
-    # Get token from header (already validated by get_current_user)
-    result = await logout_user(token="")
+    # Extract token if provided
+    token = None
+    if authorization:
+        parts = authorization.split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token = parts[1]
+    
+    # Logout user (Supabase handles token invalidation)
+    result = await logout_user(token if token else "")
     
     return JSONResponse(result)
 
