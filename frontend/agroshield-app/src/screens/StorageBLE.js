@@ -117,32 +117,9 @@ export default function StorageBLEScreen({ navigation, route }) {
         setSelectedSensor(realSensors[0]);
         await loadSensorReading(realSensors[0].id);
       } else {
-        // Fallback: Simulated sensor data for demo
-        const mockSensors = [
-          {
-            id: 'BLE_SENSOR_001',
-            name: 'Main Storage Shed',
-            deviceId: 'AA:BB:CC:DD:EE:01',
-            connected: true,
-            batteryLevel: 85,
-            lastReading: new Date().toISOString(),
-          },
-          {
-            id: 'BLE_SENSOR_002',
-            name: 'Secondary Crib',
-            deviceId: 'AA:BB:CC:DD:EE:02',
-            connected: false,
-            batteryLevel: 45,
-            lastReading: new Date(Date.now() - 3600000).toISOString(),
-          },
-        ];
-
-        setSensors(mockSensors);
-        
-        if (mockSensors.length > 0) {
-          setSelectedSensor(mockSensors[0]);
-          await loadSensorReading(mockSensors[0].id);
-        }
+        // No sensors available
+        setSensors([]);
+        setSelectedSensor(null);
       }
 
       await loadAlerts();
@@ -172,70 +149,24 @@ export default function StorageBLEScreen({ navigation, route }) {
         return;
       }
 
-      // Fallback: Simulated reading (replace with actual BLE data)
-      const mockReading = {
-        temperature: 18 + Math.random() * 5, // 18-23°C
-        humidity: 60 + Math.random() * 10, // 60-70%
-        timestamp: new Date().toISOString(),
-        sensorId,
-      };
-
-      setCurrentReading(mockReading);
+      // No valid reading available
+      setCurrentReading(null);
     } catch (error) {
       console.error('Error loading sensor reading:', error);
-      
-      // Fallback to simulated data
-      const mockReading = {
-        temperature: 18 + Math.random() * 5,
-        humidity: 60 + Math.random() * 10,
-        timestamp: new Date().toISOString(),
-        sensorId,
-      };
-      setCurrentReading(mockReading);
+      setCurrentReading(null);
     }
   };
 
   const loadAlerts = async () => {
     try {
-      // Simulated alerts (replace with API call)
-      const mockAlerts = [
-        {
-          id: 'ALERT_001',
-          severity: 'critical',
-          type: 'humidity_high',
-          message: 'Critical: Humidity at 68% - Mold risk high',
-          messageSwahili: 'Hatari: Unyevunyevu ni 68% - Hatari ya kuvu ni kubwa',
-          timestamp: new Date().toISOString(),
-          priority: 9,
-          actionRequired: true,
-          remediation: {
-            action: 'Open vents immediately',
-            timing: '11 AM - 2 PM when outdoor humidity is 42%',
-            expectedResult: 'Reduce humidity to 60% within 4 hours',
-          },
-        },
-        {
-          id: 'ALERT_002',
-          severity: 'warning',
-          type: 'pest_prediction',
-          message: 'Weevil emergence predicted in 5 days',
-          messageSwahili: 'Wadudu wataibuka baada ya siku 5',
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          priority: 6,
-          actionRequired: true,
-          remediation: {
-            action: 'Apply diatomaceous earth or neem powder',
-            timing: 'Before next Monday',
-            expectedResult: 'Prevent 90% of weevil infestation',
-          },
-        },
-      ];
-
-      // Sort by priority (highest first)
-      mockAlerts.sort((a, b) => b.priority - a.priority);
-      setAlerts(mockAlerts);
+      // TODO: Replace with actual API call
+      // const response = await api.get('/storage/alerts');
+      // setAlerts(response.data);
+      
+      setAlerts([]);
     } catch (error) {
       console.error('Error loading alerts:', error);
+      setAlerts([]);
     }
   };
 

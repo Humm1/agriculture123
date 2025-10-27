@@ -44,123 +44,15 @@ export default function NotificationsScreen({ navigation }) {
     try {
       setLoading(true);
 
-      // Simulated notifications (replace with actual API call)
-      const mockNotifications = [
-        {
-          id: 'NOTIF_001',
-          type: 'pest_alert',
-          category: 'alerts',
-          priority: 9,
-          title: 'Late Blight Risk - HIGH',
-          message: 'Weather conditions favorable for late blight in next 3 days. Humidity 85%+, temp 15-20°C.',
-          actionable: true,
-          action: 'Apply preventative fungicide (Ridomil or Dithane)',
-          timing: 'Within 24 hours before rain',
-          crop: 'Potatoes',
-          timestamp: new Date().toISOString(),
-          read: false,
-          geoTagged: true,
-          location: { lat: -1.2921, lon: 36.8219 },
-        },
-        {
-          id: 'NOTIF_002',
-          type: 'storage_warning',
-          category: 'alerts',
-          priority: 8,
-          title: 'Critical Storage Humidity',
-          message: 'Your maize storage humidity at 68% - mold risk in 5 days. Potential loss: 2,025 KES.',
-          actionable: true,
-          action: 'Open vents 11 AM-2 PM when outdoor humidity is 42%',
-          timing: 'Today',
-          crop: 'Maize',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          read: false,
-        },
-        {
-          id: 'NOTIF_003',
-          type: 'calendar_reminder',
-          category: 'reminders',
-          priority: 6,
-          title: 'Fertilizer Application Due',
-          message: 'Second top-dressing for Maize Field 1 scheduled for tomorrow. 50kg CAN per ha.',
-          actionable: true,
-          action: 'Apply CAN fertilizer',
-          timing: 'Tomorrow morning (before 10 AM)',
-          crop: 'Maize',
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          read: false,
-        },
-        {
-          id: 'NOTIF_004',
-          type: 'community_pest',
-          category: 'community',
-          priority: 7,
-          title: 'Fall Armyworm Outbreak Nearby',
-          message: '7 farmers within 5km reported Fall Armyworm in maize fields. Scout your fields immediately.',
-          actionable: true,
-          action: 'Scout fields for whorl damage, apply IPM remedies if found',
-          timing: 'Today',
-          crop: 'Maize',
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          read: true,
-          geoTagged: true,
-          reportCount: 7,
-          distance: '3.2 km',
-        },
-        {
-          id: 'NOTIF_005',
-          type: 'weather_alert',
-          category: 'alerts',
-          priority: 5,
-          title: 'Heavy Rain Expected',
-          message: '50mm+ rainfall predicted in 2 days. Delay fertilizer application to prevent leaching.',
-          actionable: true,
-          action: 'Postpone fertilizer until 3 days after heavy rain',
-          timing: 'Before Thursday',
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
-          read: true,
-        },
-        {
-          id: 'NOTIF_006',
-          type: 'harvest_reminder',
-          category: 'reminders',
-          priority: 8,
-          title: 'Harvest Window Opening',
-          message: 'Bean Field 2 entering optimal harvest window (moisture 18-20%). Harvest in next 5-7 days.',
-          actionable: true,
-          action: 'Prepare harvesting equipment and labor',
-          timing: 'Next 7 days',
-          crop: 'Beans',
-          timestamp: new Date(Date.now() - 259200000).toISOString(),
-          read: false,
-        },
-        {
-          id: 'NOTIF_007',
-          type: 'pest_prediction',
-          category: 'alerts',
-          priority: 6,
-          title: 'Weevil Emergence Predicted',
-          message: 'Maize weevil emergence in stored maize expected in 5 days (temp 23°C). Apply preventative treatment.',
-          actionable: true,
-          action: 'Apply diatomaceous earth or neem powder',
-          timing: 'Before next Monday',
-          crop: 'Maize',
-          timestamp: new Date(Date.now() - 345600000).toISOString(),
-          read: true,
-        },
-      ];
-
-      // Sort by priority (highest first), then by timestamp (newest first)
-      mockNotifications.sort((a, b) => {
-        if (b.priority !== a.priority) {
-          return b.priority - a.priority;
-        }
-        return new Date(b.timestamp) - new Date(a.timestamp);
-      });
-
-      setNotifications(mockNotifications);
+      // TODO: Replace with actual API call
+      // const response = await api.get('/notifications');
+      // setNotifications(response.data);
+      
+      // For now, start with empty notifications
+      setNotifications([]);
     } catch (error) {
       console.error('Error loading notifications:', error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

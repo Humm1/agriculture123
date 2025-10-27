@@ -94,7 +94,6 @@ const CROP_DATABASE = {
     pesticidesPerHa: 10000,
     equipmentPerHa: 15000,
     yieldPerHa: 2500,
-    pricePerKg: 100,
     maturityDays: 365,
   },
 };
@@ -204,6 +203,19 @@ export default function BudgetCalculatorScreen({ route, navigation }) {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Green Top Bar */}
+      <View style={styles.greenBar} />
+
+      {/* Welcome Content */}
+      <View style={styles.welcomeContent}>
+        <Text style={styles.welcomeTitle}>Welcome to Agropulse AI! 🎉</Text>
+        <View style={styles.userBadge}>
+          <Text style={styles.userIcon}>🛒</Text>
+          <Text style={styles.userType}>BUYER</Text>
+        </View>
+        <Text style={styles.welcomeSubtitle}>How to Get Started:</Text>
+      </View>
+
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.header}>
@@ -506,6 +518,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  welcomeBar: {
+    backgroundColor: '#2E7D32',
+    padding: 20,
+    paddingTop: 40,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    marginBottom: 12,
+  },
+  welcomeTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  userBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  userIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  userType: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   card: {
     margin: 12,

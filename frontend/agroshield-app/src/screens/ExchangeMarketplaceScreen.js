@@ -382,12 +382,6 @@ const ExchangeMarketplaceScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>AgroPulse Exchange</Text>
-        <Text style={styles.headerSubtitle}>AI-Verified Marketplace with Escrow Protection</Text>
-      </View>
-
       {/* Stats */}
       {stats && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
