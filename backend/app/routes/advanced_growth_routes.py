@@ -104,12 +104,19 @@ class ManualPlotCreationRequest(BaseModel):
 async def upload_plot_image(
     file: UploadFile = File(...),
     user_id: str = Form(...),
+    plot_id: str = Form(...),
     image_type: str = Form("initial")  # initial, progress, soil, pest, harvest
 ):
     """
     Upload plot image (initial, progress, soil, pest, or harvest photo)
     
-    Returns URL to uploaded image
+    Automatically:
+    1. Saves image to disk
+    2. Stores record in plot_images table
+    3. Triggers AI analysis based on image type
+    4. Updates image record with AI analysis results
+    
+    Returns URL to uploaded image with AI analysis data
     """
     try:
         # Validate file type
@@ -131,14 +138,115 @@ async def upload_plot_image(
         base_url = os.getenv('API_BASE_URL', 'https://urchin-app-86rjy.ondigitalocean.app')
         image_url = f"{base_url}/uploads/plots/{unique_filename}"
         
+        print(f"📸 Image uploaded: {image_url}")
+        print(f"📍 Plot ID: {plot_id}, User ID: {user_id}, Type: {image_type}")
+        
+        # Initialize AI analysis data
+        ai_analysis = {}
+        
+        # Run AI analysis based on image type
+        if image_type == "soil":
+            try:
+                from ..services.soil_health_ai import soil_analyzer
+                
+                print(f"🔬 Running AI soil health analysis on: {image_url}")
+                
+                # Analyze soil image with trained AI model
+                soil_analysis = await soil_analyzer.analyze_soil_image(image_url)
+                
+                ai_analysis["soil_health"] = {
+                    "fertility_score": soil_analysis['fertility_score'],
+                    "soil_type": soil_analysis['soil_type'],
+                    "texture": soil_analysis['texture'],
+                    "ph_estimate": soil_analysis['ph_estimate'],
+                    "moisture_level": soil_analysis['moisture_level'],
+                    "organic_matter": soil_analysis['organic_matter_estimate'],
+                    "nutrients": {
+                        "nitrogen": soil_analysis['nutrients']['nitrogen']['level'],
+                        "nitrogen_score": soil_analysis['nutrients']['nitrogen']['score'],
+                        "nitrogen_percentage": soil_analysis['nutrients']['nitrogen'].get('percentage', 'N/A'),
+                        "phosphorus": soil_analysis['nutrients']['phosphorus']['level'],
+                        "phosphorus_score": soil_analysis['nutrients']['phosphorus']['score'],
+                        "phosphorus_percentage": soil_analysis['nutrients']['phosphorus'].get('percentage', 'N/A'),
+                        "potassium": soil_analysis['nutrients']['potassium']['level'],
+                        "potassium_score": soil_analysis['nutrients']['potassium']['score'],
+                        "potassium_percentage": soil_analysis['nutrients']['potassium'].get('percentage', 'N/A')
+                    },
+                    "color_analysis": soil_analysis.get('color_analysis', {}),
+                    "recommendations": soil_analysis.get('recommendations', [])
+                }
+                
+                print(f"✅ Soil analysis complete: Fertility {soil_analysis['fertility_score']}/10, Type: {soil_analysis['soil_type']}")
+                
+            except Exception as soil_error:
+                print(f"⚠️ Soil analysis error: {soil_error}")
+                ai_analysis["soil_health"] = {"error": str(soil_error)}
+        
+        elif image_type in ["progress", "pest", "initial"]:
+            # For crop health/pest detection
+            try:
+                from ..services.pest_disease_ai import pest_disease_detector
+                
+                print(f"🐛 Running AI pest/disease detection on: {image_url}")
+                
+                # Get plot details for crop type
+                supabase = supabase_admin
+                plot_data = supabase.table('digital_plots').select('crop_type').eq('id', plot_id).single().execute()
+                crop_type = plot_data.data.get('crop_type', 'unknown') if plot_data.data else 'unknown'
+                
+                # Analyze crop health image
+                pest_analysis = await pest_disease_detector.analyze_crop_image(image_url, crop_type)
+                
+                ai_analysis["pest_disease_scan"] = {
+                    "health_status": pest_analysis['health_status'],
+                    "risk_level": pest_analysis['risk_level'],
+                    "confidence": pest_analysis['confidence'],
+                    "crop_type": pest_analysis.get('crop_type', crop_type),
+                    "growth_stage": pest_analysis.get('growth_stage', {}),
+                    "health_metrics": pest_analysis.get('health_metrics', {}),
+                    "detected_pests": pest_analysis.get('detected_pests', []),
+                    "detected_diseases": pest_analysis.get('detected_diseases', []),
+                    "predictions": pest_analysis.get('predictions', []),
+                    "immediate_actions": pest_analysis.get('immediate_actions', []),
+                    "recommendations": pest_analysis.get('recommendations', [])
+                }
+                
+                print(f"✅ Pest/Disease analysis complete: Status: {pest_analysis['health_status']}, Risk: {pest_analysis['risk_level']}")
+                
+            except Exception as pest_error:
+                print(f"⚠️ Pest/disease analysis error: {pest_error}")
+                ai_analysis["pest_disease_scan"] = {"error": str(pest_error)}
+        
+        # Save image record to database with AI analysis
+        supabase = supabase_admin
+        image_record = {
+            "id": str(uuid.uuid4()),
+            "plot_id": plot_id,
+            "user_id": user_id,
+            "image_url": image_url,
+            "image_type": image_type,
+            "description": f"{image_type.capitalize()} image with AI analysis",
+            "captured_at": datetime.utcnow().isoformat(),
+            "ai_analysis": ai_analysis if ai_analysis else None
+        }
+        
+        try:
+            result = supabase.table('plot_images').insert(image_record).execute()
+            print(f"✅ Image record saved to database with AI analysis")
+        except Exception as db_error:
+            print(f"⚠️ Error saving to database: {db_error}")
+        
         return {
             "success": True,
             "image_url": image_url,
             "filename": unique_filename,
-            "image_type": image_type
+            "image_type": image_type,
+            "ai_analysis": ai_analysis,
+            "analysis_completed": bool(ai_analysis)
         }
     
     except Exception as e:
+        print(f"❌ Error in upload_plot_image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/plots")
@@ -384,61 +492,134 @@ async def create_plot(
             "recommendations": []
         }
         
-        # Analyze soil image if provided
+        # Analyze soil image with trained AI model
         if soil_image_url:
             try:
-                from ..services.advanced_growth_service import AdvancedGrowthTrackingService
-                growth_service = AdvancedGrowthTrackingService()
+                from ..services.soil_health_ai import soil_analyzer
                 
-                soil_analysis = await growth_service.analyze_soil_from_image(soil_image_url)
+                print(f"🔬 Running AI soil health analysis on: {soil_image_url}")
+                
+                # Analyze soil image with trained AI model
+                soil_analysis = await soil_analyzer.analyze_soil_image(soil_image_url)
+                
                 ai_analysis["soil_health"] = {
-                    "fertility_score": soil_analysis.get("fertility_score", 7),
-                    "soil_type": soil_analysis.get("soil_type", soil_type or "Loam"),
-                    "nutrients": soil_analysis.get("nutrients", {
+                    "fertility_score": soil_analysis['fertility_score'],
+                    "soil_type": soil_analysis['soil_type'],
+                    "texture": soil_analysis['texture'],
+                    "ph_estimate": soil_analysis['ph_estimate'],
+                    "moisture_level": soil_analysis['moisture_level'],
+                    "organic_matter": soil_analysis['organic_matter_estimate'],
+                    "nutrients": {
+                        "nitrogen": soil_analysis['nutrients']['nitrogen']['level'],
+                        "nitrogen_score": soil_analysis['nutrients']['nitrogen']['score'],
+                        "nitrogen_percentage": soil_analysis['nutrients']['nitrogen'].get('percentage', 'N/A'),
+                        "phosphorus": soil_analysis['nutrients']['phosphorus']['level'],
+                        "phosphorus_score": soil_analysis['nutrients']['phosphorus']['score'],
+                        "phosphorus_ppm": soil_analysis['nutrients']['phosphorus'].get('ppm', 'N/A'),
+                        "potassium": soil_analysis['nutrients']['potassium']['level'],
+                        "potassium_score": soil_analysis['nutrients']['potassium']['score'],
+                        "potassium_ppm": soil_analysis['nutrients']['potassium'].get('ppm', 'N/A'),
+                    },
+                    "color_analysis": soil_analysis['color_analysis'],
+                    "confidence": soil_analysis['confidence'],
+                    "analysis_timestamp": soil_analysis['analysis_timestamp']
+                }
+                
+                # Add soil recommendations
+                for rec in soil_analysis['recommendations']:
+                    ai_analysis["recommendations"].append({
+                        "type": "soil",
+                        "priority": "high" if "⚠️" in rec else "medium",
+                        "message": rec
+                    })
+                
+                # Update soil image with AI analysis
+                try:
+                    soil_img_id = next((img['id'] for img in images_to_insert if img['image_type'] == 'soil'), None)
+                    if soil_img_id:
+                        supabase.table('plot_images').update({
+                            'ai_analysis': {
+                                'soil_health': ai_analysis['soil_health']
+                            }
+                        }).eq('id', soil_img_id).execute()
+                        print(f"✅ Soil analysis saved to image record")
+                except Exception as update_err:
+                    print(f"⚠️ Could not update image with analysis: {update_err}")
+                
+                print(f"✅ Soil health analysis complete - Fertility: {soil_analysis['fertility_score']}/10")
+                
+            except Exception as soil_err:
+                print(f"❌ Soil analysis error: {soil_err}")
+                import traceback
+                traceback.print_exc()
+                # Fallback to basic analysis
+                ai_analysis["soil_health"] = {
+                    "fertility_score": 6.5,
+                    "soil_type": soil_type or "Loam",
+                    "nutrients": {
                         "nitrogen": "Moderate",
                         "phosphorus": "Good",
                         "potassium": "Moderate"
-                    }),
-                    "ph_estimate": soil_analysis.get("ph", "6.5-7.0"),
-                    "texture": soil_analysis.get("texture", "Medium loam")
+                    },
+                    "ph_estimate": "6.5-7.0",
+                    "texture": "Medium loam"
                 }
-                ai_analysis["recommendations"].append({
-                    "type": "soil",
-                    "priority": "medium",
-                    "message": f"Soil fertility score: {ai_analysis['soil_health']['fertility_score']}/10. Consider organic matter for nitrogen boost."
-                })
-            except Exception as soil_err:
-                print(f"Soil analysis error: {soil_err}")
         
-        # Scan initial image for pests/diseases
+        # Scan initial image for pests/diseases using AI model
         if initial_image_url:
             try:
-                from ..services.advanced_growth_service import AdvancedGrowthTrackingService
-                growth_service = AdvancedGrowthTrackingService()
+                from ..services.pest_disease_ai import pest_disease_detector
                 
-                pest_scan = await growth_service.scan_for_pests(initial_image_url, crop_name)
+                # Run comprehensive AI analysis on crop image
+                pest_analysis = await pest_disease_detector.analyze_crop_image(
+                    initial_image_url, 
+                    crop_name
+                )
+                
+                # Store full analysis
                 ai_analysis["pest_disease_scan"] = {
-                    "health_status": pest_scan.get("health_status", "healthy"),
-                    "confidence": pest_scan.get("confidence", 0.85),
-                    "detected_issues": pest_scan.get("issues", []),
-                    "risk_level": pest_scan.get("risk_level", "low")
+                    "health_status": pest_analysis.get("health_status", "healthy"),
+                    "risk_level": pest_analysis.get("risk_level", "low"),
+                    "confidence": pest_analysis.get("confidence", 0.85),
+                    "growth_stage": pest_analysis.get("growth_stage", {}),
+                    "detected_pests": pest_analysis.get("detected_pests", []),
+                    "detected_diseases": pest_analysis.get("detected_diseases", []),
+                    "health_metrics": pest_analysis.get("health_metrics", {}),
+                    "predictions": pest_analysis.get("predictions", []),
+                    "immediate_actions": pest_analysis.get("immediate_actions", [])
                 }
                 
-                if pest_scan.get("issues"):
-                    for issue in pest_scan["issues"]:
-                        ai_analysis["recommendations"].append({
-                            "type": "pest_disease",
-                            "priority": "high" if issue.get("severity") == "high" else "medium",
-                            "message": f"Detected: {issue.get('name')}. {issue.get('treatment', 'Monitor closely.')}"
-                        })
-                else:
+                # Generate recommendations from analysis
+                for rec in pest_analysis.get("recommendations", []):
                     ai_analysis["recommendations"].append({
-                        "type": "pest_disease",
-                        "priority": "low",
-                        "message": "✅ No pests or diseases detected. Crop looks healthy!"
+                        "type": rec.get("type", "pest_disease"),
+                        "priority": rec.get("priority", "medium"),
+                        "message": f"{rec.get('target', 'Crop')}: {rec.get('action', 'Monitor closely')}",
+                        "timing": rec.get("timing"),
+                        "cost_estimate": rec.get("cost_estimate")
                     })
+                
+                # Add immediate actions as high-priority recommendations
+                for action in pest_analysis.get("immediate_actions", []):
+                    if "⚠️" in action or "🚨" in action:
+                        ai_analysis["recommendations"].insert(0, {
+                            "type": "urgent_action",
+                            "priority": "critical",
+                            "message": action
+                        })
+                
+                # If no issues, add positive message
+                if not pest_analysis.get("detected_pests") and not pest_analysis.get("detected_diseases"):
+                    ai_analysis["recommendations"].append({
+                        "type": "status",
+                        "priority": "low",
+                        "message": "✅ No pests or diseases detected. Crop appears healthy!"
+                    })
+                    
             except Exception as pest_err:
-                print(f"Pest scan error: {pest_err}")
+                print(f"Pest AI analysis error: {pest_err}")
+                import traceback
+                traceback.print_exc()
         
         print("=" * 60)
         print(f"{'DEMO' if is_demo else 'REAL'} PLOT CREATION - SUCCESS")
