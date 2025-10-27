@@ -257,6 +257,137 @@ CROP_GROWTH_MODELS = {
             }
         },
         "default_variety": "tmse_419"
+    },
+    "tomatoes": {
+        "varieties": {
+            "determinate": {
+                "name": "Determinate Variety (Cal-J, Marglobe)",
+                "maturity_days": 85,
+                "stages": {
+                    "germination": {"start": 0, "end": 7, "name": "Germination"},
+                    "seedling": {"start": 7, "end": 21, "name": "Seedling Stage"},
+                    "transplant_establishment": {"start": 21, "end": 35, "name": "Transplant Establishment"},
+                    "vegetative": {"start": 35, "end": 50, "name": "Vegetative Growth"},
+                    "flowering": {"start": 45, "end": 60, "name": "Flowering"},
+                    "fruit_set": {"start": 55, "end": 70, "name": "Fruit Set"},
+                    "fruit_development": {"start": 65, "end": 80, "name": "Fruit Development"},
+                    "maturity": {"start": 75, "end": 85, "name": "Harvest Maturity"}
+                },
+                "critical_practices": {
+                    "first_weeding": 15,
+                    "second_weeding": 35,
+                    "transplanting": 21,
+                    "staking_support": 28,
+                    "first_fertilizer": 25,
+                    "second_fertilizer": 45,
+                    "pruning_suckers": 35,
+                    "early_blight_monitoring": 25,
+                    "late_blight_monitoring": 40,
+                    "pest_scouting_start": 20
+                },
+                "water_requirements": {
+                    "total_mm": 500,
+                    "critical_stages": ["flowering", "fruit_set", "fruit_development"]
+                }
+            },
+            "indeterminate": {
+                "name": "Indeterminate Variety (Money Maker, Beefsteak)",
+                "maturity_days": 110,
+                "stages": {
+                    "germination": {"start": 0, "end": 7, "name": "Germination"},
+                    "seedling": {"start": 7, "end": 21, "name": "Seedling Stage"},
+                    "transplant_establishment": {"start": 21, "end": 35, "name": "Transplant Establishment"},
+                    "vegetative": {"start": 35, "end": 55, "name": "Vegetative Growth"},
+                    "flowering": {"start": 50, "end": 70, "name": "Continuous Flowering"},
+                    "fruit_set": {"start": 60, "end": 95, "name": "Continuous Fruit Set"},
+                    "fruit_development": {"start": 70, "end": 105, "name": "Fruit Development"},
+                    "maturity": {"start": 80, "end": 110, "name": "Continuous Harvest"}
+                },
+                "critical_practices": {
+                    "first_weeding": 15,
+                    "second_weeding": 35,
+                    "third_weeding": 55,
+                    "transplanting": 21,
+                    "staking_support": 25,
+                    "first_fertilizer": 28,
+                    "second_fertilizer": 48,
+                    "third_fertilizer": 68,
+                    "pruning_suckers": 32,
+                    "second_pruning": 50,
+                    "early_blight_monitoring": 25,
+                    "late_blight_monitoring": 40,
+                    "pest_scouting_start": 20
+                },
+                "water_requirements": {
+                    "total_mm": 650,
+                    "critical_stages": ["flowering", "fruit_set", "fruit_development"]
+                }
+            }
+        },
+        "default_variety": "determinate"
+    },
+    "peppers": {
+        "varieties": {
+            "bell_pepper": {
+                "name": "Bell Pepper (Sweet Pepper)",
+                "maturity_days": 90,
+                "stages": {
+                    "germination": {"start": 0, "end": 10, "name": "Germination"},
+                    "seedling": {"start": 10, "end": 28, "name": "Seedling Stage"},
+                    "transplant_establishment": {"start": 28, "end": 42, "name": "Transplant Establishment"},
+                    "vegetative": {"start": 42, "end": 60, "name": "Vegetative Growth"},
+                    "flowering": {"start": 55, "end": 70, "name": "Flowering"},
+                    "fruit_set": {"start": 65, "end": 80, "name": "Fruit Set"},
+                    "fruit_development": {"start": 75, "end": 85, "name": "Fruit Development"},
+                    "maturity": {"start": 80, "end": 90, "name": "Harvest Maturity"}
+                },
+                "critical_practices": {
+                    "first_weeding": 18,
+                    "second_weeding": 40,
+                    "transplanting": 28,
+                    "staking_support": 35,
+                    "first_fertilizer": 30,
+                    "second_fertilizer": 50,
+                    "third_fertilizer": 70,
+                    "pest_scouting_start": 25,
+                    "disease_monitoring_start": 30
+                },
+                "water_requirements": {
+                    "total_mm": 600,
+                    "critical_stages": ["flowering", "fruit_set"]
+                }
+            },
+            "hot_pepper": {
+                "name": "Hot Pepper (Cayenne, Jalapeño)",
+                "maturity_days": 100,
+                "stages": {
+                    "germination": {"start": 0, "end": 12, "name": "Germination"},
+                    "seedling": {"start": 12, "end": 30, "name": "Seedling Stage"},
+                    "transplant_establishment": {"start": 30, "end": 45, "name": "Transplant Establishment"},
+                    "vegetative": {"start": 45, "end": 65, "name": "Vegetative Growth"},
+                    "flowering": {"start": 60, "end": 80, "name": "Flowering"},
+                    "fruit_set": {"start": 70, "end": 90, "name": "Fruit Set"},
+                    "fruit_development": {"start": 80, "end": 95, "name": "Fruit Development"},
+                    "maturity": {"start": 85, "end": 100, "name": "Harvest Maturity"}
+                },
+                "critical_practices": {
+                    "first_weeding": 20,
+                    "second_weeding": 42,
+                    "transplanting": 30,
+                    "staking_support": 38,
+                    "first_fertilizer": 32,
+                    "second_fertilizer": 55,
+                    "third_fertilizer": 75,
+                    "pest_scouting_start": 28,
+                    "disease_monitoring_start": 35
+                },
+                "water_requirements": {
+                    "total_mm": 550,
+                    "critical_stages": ["flowering", "fruit_set"]
+                }
+            }
+        },
+        "default_variety": "bell_pepper"
     }
 }
 
