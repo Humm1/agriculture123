@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
 
-// Supabase configuration
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://your-project-id.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'your_supabase_anon_key_here';
+// Log configuration for debugging (remove in production)
+console.log('🔧 Supabase Configuration:');
+console.log('URL:', SUPABASE_URL);
+console.log('Key:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 20)}...` : 'NOT SET');
 
 // Create Supabase client with AsyncStorage for session persistence
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -22,45 +24,89 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // Register a new user
 export const registerUser = async (email, password, userType, profileData = {}) => {
   try {
+    console.log('📝 Starting registration for:', email, 'as', userType);
+    console.log('📝 Profile data:', profileData);
+    
     // Sign up the user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: undefined, // Disable email confirmation redirect
         data: {
           user_type: userType, // 'farmer' or 'buyer'
+          full_name: profileData.full_name || '',
+          phone_number: profileData.phone_number || '',
           ...profileData,
         },
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase signup error:', error);
+      throw error;
+    }
+
+    console.log('✅ Signup response:', {
+      user: data.user?.id,
+      session: data.session ? 'Session created' : 'No session (email confirmation required)',
+      identities: data.user?.identities?.length || 0
+    });
+
+    // Check if user already exists
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      console.error('❌ User already registered with this email');
+      return { 
+        user: null, 
+        session: null, 
+        error: 'This email is already registered. Please try logging in instead.' 
+      };
+    }
 
     // Create user profile in profiles table
     if (data.user) {
-      const { error: profileError } = await supabase
+      console.log('📊 Creating profile in profiles table...');
+      console.log('📊 User ID:', data.user.id);
+      
+      const profileInsert = {
+        id: data.user.id,
+        email: email,
+        user_type: userType,
+        full_name: profileData.full_name || '',
+        phone_number: profileData.phone_number || '',
+        location: profileData.location || '',
+        county: profileData.county || '',
+        subcounty: profileData.subcounty || '',
+        village: profileData.village || '',
+        latitude: profileData.latitude || null,
+        longitude: profileData.longitude || null,
+        created_at: new Date().toISOString(),
+      };
+      
+      console.log('📊 Profile insert data:', profileInsert);
+      
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            email: email,
-            user_type: userType,
-            full_name: profileData.full_name || '',
-            phone_number: profileData.phone_number || '',
-            location: profileData.location || '',
-            created_at: new Date().toISOString(),
-          },
-        ]);
+        .insert([profileInsert])
+        .select();
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
-        // Don't throw here, user is still registered
+        console.error('❌ Profile creation error:', profileError);
+        console.error('❌ Error details:', {
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+          code: profileError.code
+        });
+        // Don't throw here, user is still registered in auth
+      } else {
+        console.log('✅ Profile created successfully:', profileData);
       }
     }
 
     return { user: data.user, session: data.session, error: null };
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error:', error);
     return { user: null, session: null, error: error.message };
   }
 };
@@ -85,12 +131,31 @@ export const loginUser = async (email, password) => {
 // Logout user
 export const logoutUser = async () => {
   try {
+    console.log('🚪 Logging out user...');
+    
+    // Sign out from Supabase (this will clear session from storage)
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    
+    if (error) {
+      console.error('❌ Supabase signOut error:', error);
+      // Even if Supabase returns an error, we should still clear local data
+    } else {
+      console.log('✅ Supabase signOut successful');
+    }
+    
+    // Force clear any remaining session data from AsyncStorage
+    try {
+      await AsyncStorage.removeItem('supabase.auth.token');
+      console.log('✅ Cleared auth token from AsyncStorage');
+    } catch (storageError) {
+      console.warn('⚠️ Could not clear AsyncStorage:', storageError);
+    }
+    
     return { error: null };
   } catch (error) {
-    console.error('Logout error:', error);
-    return { error: error.message };
+    console.error('❌ Logout error:', error);
+    // Return success anyway to allow client-side cleanup
+    return { error: null };
   }
 };
 
@@ -102,8 +167,11 @@ export const getCurrentUser = async () => {
     if (error) throw error;
     
     if (!user) {
+      console.log('❌ No user found in session');
       return { user: null, profile: null, error: null };
     }
+
+    console.log('👤 Fetching profile for user:', user.id);
 
     // Fetch user profile
     const { data: profile, error: profileError } = await supabase
@@ -112,13 +180,24 @@ export const getCurrentUser = async () => {
       .eq('id', user.id)
       .single();
 
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Profile fetch error:', profileError);
+    if (profileError) {
+      if (profileError.code === 'PGRST116') {
+        console.warn('⚠️ Profile not found in database for user:', user.id);
+      } else {
+        console.error('❌ Profile fetch error:', profileError);
+      }
+    } else {
+      console.log('✅ Profile fetched:', {
+        id: profile.id,
+        email: profile.email,
+        user_type: profile.user_type,
+        full_name: profile.full_name
+      });
     }
 
     return { user, profile, error: null };
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error('❌ Get current user error:', error);
     return { user: null, profile: null, error: error.message };
   }
 };

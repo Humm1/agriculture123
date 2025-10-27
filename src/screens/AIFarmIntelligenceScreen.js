@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { Card, Button, Chip, ActivityIndicator, ProgressBar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
-import aiFarmIntelligenceService from '../../services/aiFarmIntelligenceService';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
+import aiFarmIntelligenceService from '../services/aiFarmIntelligenceService';
 import * as Location from 'expo-location';
 
 /**

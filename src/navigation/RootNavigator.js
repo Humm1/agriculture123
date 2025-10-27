@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -36,6 +37,11 @@ import BuyerMarketplace from '../screens/BuyerMarketplace';
 
 // Shared Screens
 import HomeScreen from '../screens/HomeScreen';
+import GrowthTrackingScreen from '../screens/farmer/GrowthTrackingScreen';
+import CreatePlotScreen from '../screens/farmer/CreatePlotScreen';
+import PlotDetailsScreen from '../screens/farmer/PlotDetailsScreen';
+import PlotDatasetUploadScreen from '../screens/farmer/PlotDatasetUploadScreen';
+import PlotAnalyticsScreen from '../screens/farmer/PlotAnalyticsScreen';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -56,58 +62,90 @@ const AuthStack = () => (
 );
 
 // Farmer Tab Navigator
-const FarmerTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName;
+const FarmerTabs = () => {
+  const { logout } = useAuth();
 
-        if (route.name === 'Dashboard') {
-          iconName = 'view-dashboard';
-        } else if (route.name === 'Marketplace') {
-          iconName = 'store';
-        } else if (route.name === 'MyListings') {
-          iconName = 'format-list-bulleted';
-        } else if (route.name === 'Profile') {
-          iconName = 'account';
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: async () => {
+            const result = await logout();
+            if (!result.success) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          }
         }
+      ]
+    );
+  };
 
-        return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#4CAF50',
-      tabBarInactiveTintColor: 'gray',
-      headerShown: true,
-      headerStyle: {
-        backgroundColor: '#4CAF50',
-      },
-      headerTintColor: '#fff',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
-    })}
-  >
-    <Tab.Screen 
-      name="Dashboard" 
-      component={FarmerDashboard}
-      options={{ title: 'Farmer Dashboard' }}
-    />
-    <Tab.Screen 
-      name="Marketplace" 
-      component={FarmerMarketplace}
-      options={{ title: 'Marketplace' }}
-    />
-    <Tab.Screen 
-      name="MyListings" 
-      component={HomeScreen}
-      options={{ title: 'My Listings' }}
-    />
-    <Tab.Screen 
-      name="Profile" 
-      component={HomeScreen}
-      options={{ title: 'Profile' }}
-    />
-  </Tab.Navigator>
-);
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Dashboard') {
+            iconName = 'view-dashboard';
+          } else if (route.name === 'Marketplace') {
+            iconName = 'store';
+          } else if (route.name === 'MyListings') {
+            iconName = 'format-list-bulleted';
+          } else if (route.name === 'Profile') {
+            iconName = 'account';
+          }
+
+          return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#4CAF50',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        headerRight: () => (
+          <TouchableOpacity 
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          >
+            <MaterialCommunityIcons name="logout" size={24} color="#fff" />
+          </TouchableOpacity>
+        ),
+      })}
+    >
+      <Tab.Screen 
+        name="Dashboard" 
+        component={FarmerDashboard}
+        options={{ title: 'Farmer Dashboard' }}
+      />
+      <Tab.Screen 
+        name="Marketplace" 
+        component={FarmerMarketplace}
+        options={{ title: 'Marketplace' }}
+      />
+      <Tab.Screen 
+        name="MyListings" 
+        component={HomeScreen}
+        options={{ title: 'My Listings' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={HomeScreen}
+        options={{ title: 'Profile' }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 // Farmer Dashboard Stack (includes modal screens)
 const FarmerDashboard = () => (
@@ -165,9 +203,46 @@ const FarmerDashboard = () => (
     />
     <Stack.Screen 
       name="GrowthTracking" 
-      component={HomeScreen}
+      component={GrowthTrackingScreen}
       options={{ 
         title: 'Growth Tracking',
+        headerStyle: { backgroundColor: '#009688' },
+        headerTintColor: '#FFF'
+      }}
+    />
+    <Stack.Screen 
+      name="CreatePlot" 
+      component={CreatePlotScreen}
+      options={{ 
+        title: 'Create New Plot',
+        headerStyle: { backgroundColor: '#4CAF50' },
+        headerTintColor: '#FFF'
+      }}
+    />
+    <Stack.Screen 
+      name="PlotDetails" 
+      component={PlotDetailsScreen}
+      options={{ 
+        title: 'Plot Analysis',
+        headerStyle: { backgroundColor: '#4CAF50' },
+        headerTintColor: '#FFF',
+        headerShown: false  // Custom header in the screen
+      }}
+    />
+    <Stack.Screen 
+      name="PlotDatasetUpload" 
+      component={PlotDatasetUploadScreen}
+      options={{ 
+        title: 'Upload Images',
+        headerStyle: { backgroundColor: '#2196F3' },
+        headerTintColor: '#FFF'
+      }}
+    />
+    <Stack.Screen 
+      name="PlotAnalytics" 
+      component={PlotAnalyticsScreen}
+      options={{ 
+        title: 'Plot Analytics',
         headerStyle: { backgroundColor: '#009688' },
         headerTintColor: '#FFF'
       }}
@@ -248,58 +323,90 @@ const FarmerDashboard = () => (
 );
 
 // Buyer Tab Navigator
-const BuyerTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName;
+const BuyerTabs = () => {
+  const { logout } = useAuth();
 
-        if (route.name === 'Browse') {
-          iconName = 'shopping';
-        } else if (route.name === 'MyOrders') {
-          iconName = 'clipboard-list';
-        } else if (route.name === 'SupplyForecast') {
-          iconName = 'chart-line';
-        } else if (route.name === 'Profile') {
-          iconName = 'account';
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: async () => {
+            const result = await logout();
+            if (!result.success) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          }
         }
+      ]
+    );
+  };
 
-        return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#2d6a4f',
-      tabBarInactiveTintColor: 'gray',
-      headerShown: true,
-      headerStyle: {
-        backgroundColor: '#2d6a4f',
-      },
-      headerTintColor: '#fff',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
-    })}
-  >
-    <Tab.Screen 
-      name="Browse" 
-      component={BuyerMarketplace}
-      options={{ title: 'Browse Produce' }}
-    />
-    <Tab.Screen 
-      name="MyOrders" 
-      component={HomeScreen}
-      options={{ title: 'My Orders' }}
-    />
-    <Tab.Screen 
-      name="SupplyForecast" 
-      component={HomeScreen}
-      options={{ title: 'Supply Forecast' }}
-    />
-    <Tab.Screen 
-      name="Profile" 
-      component={HomeScreen}
-      options={{ title: 'Profile' }}
-    />
-  </Tab.Navigator>
-);
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Browse') {
+            iconName = 'shopping';
+          } else if (route.name === 'MyOrders') {
+            iconName = 'clipboard-list';
+          } else if (route.name === 'SupplyForecast') {
+            iconName = 'chart-line';
+          } else if (route.name === 'Profile') {
+            iconName = 'account';
+          }
+
+          return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#2d6a4f',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: '#2d6a4f',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        headerRight: () => (
+          <TouchableOpacity 
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          >
+            <MaterialCommunityIcons name="logout" size={24} color="#fff" />
+          </TouchableOpacity>
+        ),
+      })}
+    >
+      <Tab.Screen 
+        name="Browse" 
+        component={BuyerMarketplace}
+        options={{ title: 'Browse Produce' }}
+      />
+      <Tab.Screen 
+        name="MyOrders" 
+        component={HomeScreen}
+        options={{ title: 'My Orders' }}
+      />
+      <Tab.Screen 
+        name="SupplyForecast" 
+        component={HomeScreen}
+        options={{ title: 'Supply Forecast' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={HomeScreen}
+        options={{ title: 'Profile' }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 // Main App Stack Navigator
 const AppStack = () => {
@@ -319,10 +426,27 @@ const AppStack = () => {
 
 // Root Navigator
 const RootNavigator = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading, checkAuth } = useAuth();
+  const [initialCheckDone, setInitialCheckDone] = React.useState(false);
 
-  if (loading) {
-    return null; // Or a loading screen
+  React.useEffect(() => {
+    const performInitialCheck = async () => {
+      console.log('🔄 Performing initial auth check...');
+      await checkAuth();
+      setInitialCheckDone(true);
+      console.log('✅ Initial auth check complete');
+    };
+    
+    performInitialCheck();
+  }, []);
+
+  // Show loading screen during initial auth check or while auth is loading
+  if (isLoading || !initialCheckDone) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
   }
 
   return (
@@ -331,5 +455,17 @@ const RootNavigator = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  logoutButton: {
+    paddingRight: 15,
+  },
+});
 
 export default RootNavigator;

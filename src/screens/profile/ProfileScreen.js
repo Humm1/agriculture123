@@ -8,10 +8,20 @@ import { useAuth } from '../../context/AuthContext';
 const ProfileScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
+      { 
+        text: 'Logout', 
+        style: 'destructive', 
+        onPress: async () => {
+          const result = await logout();
+          if (!result.success) {
+            Alert.alert('Error', 'Logout failed. Please try again.');
+          }
+          // Navigation will be handled automatically by auth state change
+        }
+      },
     ]);
   };
 

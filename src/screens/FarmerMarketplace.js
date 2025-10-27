@@ -17,7 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://your-backend-url/api/marketplace/farmer';
+// Use live backend URL
+const API_BASE_URL = 'https://urchin-app-86rjy.ondigitalocean.app/api/marketplace/farmer';
 
 export default function FarmerMarketplace({ navigation }) {
   const [activeTab, setActiveTab] = useState('listings'); // listings, offers, contracts, insights

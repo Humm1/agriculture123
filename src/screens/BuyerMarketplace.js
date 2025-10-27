@@ -17,7 +17,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://your-backend-url/api/marketplace/buyer';
+// Use live backend URL
+const API_BASE_URL = 'https://urchin-app-86rjy.ondigitalocean.app/api/marketplace/buyer';
 
 export default function BuyerMarketplace({ navigation }) {
   const [activeTab, setActiveTab] = useState('search'); // search, requirements, offers, orders

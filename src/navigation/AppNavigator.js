@@ -18,12 +18,19 @@ const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    const performInitialCheck = async () => {
+      await checkAuth();
+      setInitialCheckDone(true);
+    };
+    
+    performInitialCheck();
   }, []);
 
-  if (isLoading) {
+  // Show loading screen during initial auth check
+  if (isLoading || !initialCheckDone) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -32,16 +39,18 @@ const AppNavigator = () => {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <Stack.Screen name="Main" component={MainTabNavigator} />
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-        </>
-      )}
-    </Stack.Navigator>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
