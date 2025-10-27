@@ -1,47 +1,41 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-.venv/
-env/
-.env
-*.egg-info/
-.eggs/
-dist/
-build/
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# Node
+# dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+
+# Expo
 .expo/
-.expo-shared/
+dist/
 web-build/
+expo-env.d.ts
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
 
-# OS
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
 .DS_Store
-Thumbs.db
+*.pem
 
-# Uploads
-uploads/
-*.log
+# local env files
+.env*.local
 
-# Environment
-.env
-.env.local
-.env.example
-backend/.env.example
-frontend/.env.example
-frontend/agroshield-app/.env.example
-.vercel
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
