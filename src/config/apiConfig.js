@@ -10,14 +10,12 @@ export const getApiBaseUrl = () => {
     return process.env.API_BASE_URL;
   }
 
-  // LIVE BACKEND: DigitalOcean App Platform
-  // Using production backend for all environments now
-  return 'https://urchin-app-86rjy.ondigitalocean.app/api';
-  
-  // Alternative: Uncomment below to use local backend in development
-  // return __DEV__ 
-  //   ? 'http://192.168.137.1:8080/api'  // Development - Local backend on WiFi (port 8080)
-  //   : 'https://urchin-app-86rjy.ondigitalocean.app/api';  // Production - DigitalOcean backend
+  // Mobile app configuration
+  // Development: Local network IP
+  // Production: Vercel backend URL (after deployment)
+  return __DEV__ 
+    ? 'http://192.168.137.1:8000/api'  // Development - Local backend on WiFi
+    : 'https://agropulse-ai.vercel.app/api';  // Production - Vercel backend
 };
 
 // API Configuration

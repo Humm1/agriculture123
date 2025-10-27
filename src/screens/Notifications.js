@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Card, Chip, Badge, ActivityIndicator, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Notifications Screen

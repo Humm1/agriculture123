@@ -152,34 +152,8 @@ const RegisterScreen = ({ navigation }) => {
     if (!result.success) {
       Alert.alert('Registration Failed', result.error);
     } else {
-      // Check if email confirmation is required
-      const needsConfirmation = !result.session;
-      
-      if (needsConfirmation) {
-        // Show email confirmation message
-        Alert.alert(
-          '📧 Confirm Your Email',
-          `We've sent a confirmation email to ${formData.email}.\n\nPlease check your inbox and click the confirmation link to activate your account.\n\nAfter confirming, return here to log in.`,
-          [
-            {
-              text: 'OK, Got It!',
-              onPress: () => navigation.replace('Login')
-            }
-          ]
-        );
-      } else {
-        // Email confirmation disabled - can login immediately
-        Alert.alert(
-          'Registration Successful!',
-          'Your account has been created. Please log in to continue.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.replace('Login')
-            }
-          ]
-        );
-      }
+      // Redirect to welcome screen to show onboarding
+      navigation.replace('Welcome');
     }
   };
 

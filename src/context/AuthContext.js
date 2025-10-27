@@ -30,9 +30,6 @@ const AuthContext = createContext({
   refreshSession: async () => {},
 });
 
-// Export context as named export too
-export { AuthContext };
-
 // Auth Provider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -46,14 +43,6 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       try {
         setLoading(true);
-        
-        // Check if Supabase is properly configured
-        const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project-id.supabase.co';
-        if (supabaseUrl.includes('your-project-id')) {
-          console.warn('Supabase not configured - using offline mode');
-          setLoading(false);
-          return;
-        }
         
         // Get current session
         const { session: currentSession } = await getCurrentSession();
@@ -77,26 +66,17 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth state changes
     const { data: authListener } = onAuthStateChange(async (event, newSession) => {
-      console.log('🔔 Auth event:', event);
-      console.log('🔔 Session:', newSession ? 'Active' : 'None');
+      console.log('Auth event:', event);
       
       setSession(newSession);
 
       if (newSession) {
         // User signed in or session refreshed
         const { user: newUser, profile: newProfile } = await getCurrentUser();
-        console.log('👤 User loaded:', newUser?.id);
-        console.log('📋 Profile loaded:', {
-          id: newProfile?.id,
-          email: newProfile?.email,
-          user_type: newProfile?.user_type,
-          full_name: newProfile?.full_name
-        });
         setUser(newUser);
         setProfile(newProfile);
       } else {
         // User signed out
-        console.log('👋 User signed out');
         setUser(null);
         setProfile(null);
       }
@@ -216,16 +196,14 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: registerError };
       }
 
-      // DON'T automatically log the user in after registration
-      // Let them go to the login screen instead
-      // This ensures proper flow: Register → Login → Dashboard
-      
-      // Optional: Log out immediately if Supabase auto-logged them in
-      if (newSession) {
-        await authLogout();
-      }
+      setUser(newUser);
+      setSession(newSession);
 
-      return { success: true, user: newUser, profile: null };
+      // Fetch profile
+      const { user: currentUser, profile: currentProfile } = await getCurrentUser();
+      setProfile(currentProfile);
+
+      return { success: true, user: newUser, profile: currentProfile };
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.message);
@@ -238,47 +216,29 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
-      console.log('🚪 Starting logout process...');
       setLoading(true);
       setError(null);
 
       // Stop location tracking
-      try {
-        locationService.stopWatching();
-        await locationService.clearLocation();
-        console.log('✅ Location tracking stopped');
-      } catch (locError) {
-        console.warn('⚠️ Location cleanup error (non-blocking):', locError);
-      }
+      locationService.stopWatching();
+      await locationService.clearLocation();
 
-      // Sign out from Supabase
       const { error: logoutError } = await authLogout();
 
       if (logoutError) {
-        console.error('❌ Logout error:', logoutError);
         setError(logoutError);
-        // Don't return error - still clear local state
+        return { success: false, error: logoutError };
       }
 
-      // Clear local state
-      console.log('🧹 Clearing local state...');
       setUser(null);
       setProfile(null);
       setSession(null);
-      
-      console.log('✅ Logout successful');
+
       return { success: true };
     } catch (err) {
-      console.error('❌ Logout error:', err);
+      console.error('Logout error:', err);
       setError(err.message);
-      
-      // Even if there's an error, clear local state
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-      
-      // Return success to allow navigation to login screen
-      return { success: true };
+      return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
@@ -379,39 +339,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check authentication status (for page reloads)
-  const checkAuth = async () => {
-    try {
-      setLoading(true);
-      
-      // Get current session from storage
-      const { session: currentSession } = await getCurrentSession();
-      
-      if (currentSession) {
-        // Session exists, get user and profile
-        const { user: currentUser, profile: currentProfile } = await getCurrentUser();
-        setUser(currentUser);
-        setProfile(currentProfile);
-        setSession(currentSession);
-        console.log('✅ Session restored from storage');
-      } else {
-        // No session found
-        console.log('❌ No session found');
-        setUser(null);
-        setProfile(null);
-        setSession(null);
-      }
-    } catch (err) {
-      console.error('Check auth error:', err);
-      setError(err.message);
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Context value
   const value = {
     user,
@@ -426,9 +353,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updatePassword,
     refreshSession,
-    checkAuth,
     isAuthenticated: !!user,
-    isLoading: loading,
     isFarmer: profile?.user_type === 'farmer',
     isBuyer: profile?.user_type === 'buyer',
   };

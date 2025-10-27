@@ -227,18 +227,6 @@ export default function SoilScanScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Soil Analysis</Text>
-        <View style={styles.headerRight} />
-      </View>
-
       {/* Instructions */}
       <View style={styles.instructionsContainer}>
         <Chip 
@@ -317,34 +305,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 15,
-    paddingTop: 40,
-    backgroundColor: '#4CAF50',
-    zIndex: 100,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    width: '100%'
-  },
-  backButton: {
-    padding: 5
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    flex: 1,
-    textAlign: 'center'
-  },
-  headerRight: {
-    width: 34
   },
   noPermissionText: {
     fontSize: 16,
