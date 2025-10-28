@@ -829,18 +829,14 @@ async def get_plot_details(plot_id: str, user_id: str):
         
         plot = plot_result.data[0]
         
-        # Get all images for this plot with AI analysis
-        images_result = supabase.table('plot_images').select('id, plot_id, image_type, image_url, captured_at, uploaded_at, created_at, ai_analysis').eq('plot_id', plot_id).order('captured_at', desc=True).execute()
+        # Get all images for this plot
+        images_result = supabase.table('plot_images').select('id, plot_id, image_type, image_url, captured_at, uploaded_at, created_at').eq('plot_id', plot_id).order('captured_at', desc=True).execute()
         images = images_result.data or []
         
-        # Log AI analysis data for debugging
+        # Log images data for debugging
         print(f"📸 Fetched {len(images)} images for plot {plot_id}")
         for idx, img in enumerate(images):
-            has_analysis = bool(img.get('ai_analysis'))
-            print(f"  Image {idx + 1}: type={img.get('image_type')}, has_ai_analysis={has_analysis}")
-            if has_analysis:
-                analysis_keys = list(img.get('ai_analysis', {}).keys())
-                print(f"    Analysis keys: {analysis_keys}")
+            print(f"  Image {idx + 1}: type={img.get('image_type')}, url={img.get('image_url')}")
         
         # Get recent growth logs
         logs_result = supabase.table('growth_logs').select('*').eq('plot_id', plot_id).order('timestamp', desc=True).limit(5).execute()

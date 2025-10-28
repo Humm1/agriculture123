@@ -117,16 +117,14 @@ export default function BudgetCalculatorScreen({ route, navigation }) {
     try {
       if (cropRecommendations) {
         setRecommendedCrops(cropRecommendations.map(c => c.crop || c));
-      } else if (user?.id) {
-        const response = await locationAPI.getCropRecommendations(user.id);
-        if (response.recommendations?.suitable_crops) {
-          setRecommendedCrops(
-            response.recommendations.suitable_crops.map(c => c.crop)
-          );
-        }
+      } else {
+        // Fallback: Use all crops from database if API fails
+        setRecommendedCrops(Object.keys(CROP_DATABASE));
       }
     } catch (error) {
       console.error('Load recommendations error:', error);
+      // Fallback: Use all crops from database
+      setRecommendedCrops(Object.keys(CROP_DATABASE));
     }
   };
 
