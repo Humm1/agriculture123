@@ -1,0 +1,42 @@
+{
+  "generation_date": "2025-10-28T04:01:04.797738",
+  "datasets": {
+    "pest_detection": {
+      "images": 1100,
+      "classes": 7,
+      "path": "pest_detection"
+    },
+    "disease_detection": {
+      "images": 1100,
+      "classes": 7,
+      "path": "disease_detection"
+    },
+    "storage_assessment": {
+      "images": 750,
+      "classes": 5,
+      "path": "storage_assessment"
+    },
+    "soil_diagnostics": {
+      "images": 720,
+      "classes": 6,
+      "path": "soil_diagnostics"
+    },
+    "plant_health": {
+      "images": 700,
+      "classes": 7,
+      "path": "plant_health"
+    },
+    "climate_prediction": {
+      "records": 730,
+      "time_series": true,
+      "path": "climate_prediction"
+    },
+    "yield_prediction": {
+      "records": 1000,
+      "regression": true,
+      "path": "yield_prediction"
+    }
+  },
+  "total_images": 4370,
+  "total_records": 1730
+}

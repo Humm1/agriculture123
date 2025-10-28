@@ -152,6 +152,108 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
       {/* Analysis Results */}
       {analysis && (
         <>
+          {/* ML Prediction Section */}
+          {analysis.ml_prediction && (
+            <Card style={styles.card}>
+              <Card.Title title="🤖 ML Soil Classification" titleStyle={styles.cardTitle} />
+              <Card.Content>
+                <View style={styles.mlHeader}>
+                  <MaterialCommunityIcons
+                    name="brain"
+                    size={32}
+                    color={theme.colors.primary}
+                  />
+                  <View style={styles.mlInfo}>
+                    <Text style={styles.soilType}>{analysis.soil_type?.toUpperCase()}</Text>
+                    <View style={styles.confidenceRow}>
+                      <Text style={styles.confidenceLabel}>Confidence:</Text>
+                      <Text style={styles.confidenceValue}>
+                        {(analysis.ml_confidence * 100).toFixed(1)}%
+                      </Text>
+                    </View>
+                    {analysis.ml_prediction.model_used && (
+                      <Text style={styles.modelText}>
+                        Model: {analysis.ml_prediction.model_used}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Soil Characteristics */}
+                {analysis.characteristics && (
+                  <View style={styles.characteristicsSection}>
+                    <Text style={styles.sectionTitle}>Characteristics:</Text>
+                    <View style={styles.charGrid}>
+                      {Object.entries(analysis.characteristics).map(([key, value]) => (
+                        <View key={key} style={styles.charItem}>
+                          <Text style={styles.charLabel}>{key.replace('_', ' ')}:</Text>
+                          <Text style={styles.charValue}>{value}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Fertility Estimate */}
+                {analysis.fertility_estimate && (
+                  <View style={styles.fertilitySection}>
+                    <Text style={styles.sectionTitle}>Fertility Estimate:</Text>
+                    <View style={styles.fertilityBar}>
+                      <View
+                        style={[
+                          styles.fertilityFill,
+                          {
+                            width: `${analysis.fertility_estimate.fertility_score * 100}%`,
+                            backgroundColor:
+                              analysis.fertility_estimate.fertility_score > 0.7
+                                ? theme.colors.success
+                                : analysis.fertility_estimate.fertility_score > 0.4
+                                ? theme.colors.accent
+                                : theme.colors.error,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.fertilityText}>
+                      {analysis.fertility_estimate.description} ({(analysis.fertility_estimate.fertility_score * 100).toFixed(0)}%)
+                    </Text>
+                  </View>
+                )}
+
+                {/* Crop Recommendations */}
+                {analysis.recommendations?.suitable_crops && (
+                  <View style={styles.cropsSection}>
+                    <Text style={styles.sectionTitle}>🌾 Suitable Crops:</Text>
+                    <View style={styles.cropsList}>
+                      {analysis.recommendations.suitable_crops.map((crop, index) => (
+                        <Chip key={index} style={styles.cropChip}>
+                          {crop}
+                        </Chip>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Amendments */}
+                {analysis.recommendations?.amendments && (
+                  <View style={styles.amendmentsSection}>
+                    <Text style={styles.sectionTitle}>💊 Recommended Amendments:</Text>
+                    {analysis.recommendations.amendments.map((amendment, index) => (
+                      <View key={index} style={styles.amendmentItem}>
+                        <MaterialCommunityIcons
+                          name="check-circle"
+                          size={18}
+                          color={theme.colors.success}
+                        />
+                        <Text style={styles.amendmentText}>{amendment}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Card.Content>
+            </Card>
+          )}
+
           <Card style={styles.card}>
             <Card.Title title="Soil Texture Analysis" titleStyle={styles.cardTitle} />
             <Card.Content>
@@ -412,6 +514,121 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     flex: 1,
   },
+  mlHeader: {
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+    alignItems: 'center',
+  },
+  mlInfo: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  soilType: {
+    ...typography.h3,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    textTransform: 'capitalize',
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  confidenceLabel: {
+    ...typography.caption,
+    color: theme.colors.placeholder,
+    marginRight: spacing.xs,
+  },
+  confidenceValue: {
+    ...typography.body,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  modelText: {
+    ...typography.caption,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
+  },
+  characteristicsSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  sectionTitle: {
+    ...typography.body,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: spacing.sm,
+  },
+  charGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.xs,
+  },
+  charItem: {
+    width: '50%',
+    marginBottom: spacing.sm,
+  },
+  charLabel: {
+    ...typography.caption,
+    color: theme.colors.placeholder,
+    textTransform: 'capitalize',
+  },
+  charValue: {
+    ...typography.body,
+    fontWeight: '600',
+    color: theme.colors.text,
+    textTransform: 'capitalize',
+  },
+  fertilitySection: {
+    marginTop: spacing.md,
+  },
+  fertilityBar: {
+    height: 20,
+    backgroundColor: theme.colors.border,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginVertical: spacing.sm,
+  },
+  fertilityFill: {
+    height: '100%',
+    borderRadius: 10,
+  },
+  fertilityText: {
+    ...typography.caption,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  cropsSection: {
+    marginTop: spacing.md,
+  },
+  cropsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.xs,
+  },
+  cropChip: {
+    marginRight: spacing.xs,
+    marginBottom: spacing.xs,
+    backgroundColor: theme.colors.primary + '20',
+  },
+  amendmentsSection: {
+    marginTop: spacing.md,
+  },
+  amendmentItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  amendmentText: {
+    ...typography.body,
+    color: theme.colors.text,
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
 });
 
 export default SoilAnalysisScreen;
+

@@ -10,6 +10,9 @@ import FarmDetailScreen from '../screens/farm/FarmDetailScreen';
 import SoilAnalysisScreen from '../screens/farm/SoilAnalysisScreen';
 import CalendarScreen from '../screens/farm/CalendarScreen';
 import PestScanScreen from '../screens/farm/PestScanScreen';
+import ModelTrainingScreen from '../screens/farmer/ModelTrainingScreen';
+import TrainedModelsScreen from '../screens/farmer/TrainedModelsScreen';
+import AICalendarScreen from '../screens/farmer/AICalendarScreen';
 
 const Stack = createStackNavigator();
 
@@ -55,6 +58,21 @@ const FarmStack = () => {
         name="PestScan" 
         component={PestScanScreen}
         options={{ title: 'Pest Detection' }}
+      />
+      <Stack.Screen 
+        name="ModelTraining" 
+        component={ModelTrainingScreen}
+        options={{ title: 'AI Model Training' }}
+      />
+      <Stack.Screen 
+        name="TrainedModels" 
+        component={TrainedModelsScreen}
+        options={{ title: 'Trained Models' }}
+      />
+      <Stack.Screen 
+        name="AICalendar" 
+        component={AICalendarScreen}
+        options={{ title: 'AI Farming Calendar' }}
       />
     </Stack.Navigator>
   );

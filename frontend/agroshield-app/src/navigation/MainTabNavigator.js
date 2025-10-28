@@ -5,7 +5,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../theme/theme';
 
 // Stack Navigators
-import HomeStack from './HomeStack';
 import FarmStack from './FarmStack';
 import GroupsStack from './GroupsStack';
 import CampaignsStack from './CampaignsStack';
@@ -22,9 +21,6 @@ const MainTabNavigator = () => {
           let iconName;
 
           switch (route.name) {
-            case 'HomeTab':
-              iconName = 'home';
-              break;
             case 'FarmTab':
               iconName = 'leaf';
               break;
@@ -54,11 +50,6 @@ const MainTabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen 
-        name="HomeTab" 
-        component={HomeStack}
-        options={{ tabBarLabel: 'Home' }}
-      />
       <Tab.Screen 
         name="FarmTab" 
         component={FarmStack}

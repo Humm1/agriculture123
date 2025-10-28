@@ -1,0 +1,21 @@
+{
+  "description": "Daily climate data for 2 years with seasonal patterns",
+  "features": [
+    "date",
+    "temperature_c",
+    "humidity_percent",
+    "rainfall_mm",
+    "wind_speed_kmh",
+    "pressure_mb",
+    "cloud_cover_percent",
+    "uv_index",
+    "soil_temp_c",
+    "evapotranspiration_mm"
+  ],
+  "records": 730,
+  "start_date": "2023-10-29",
+  "end_date": "2025-10-27",
+  "use_case": "LSTM time-series prediction",
+  "sequence_length": 30,
+  "prediction_horizon": 7
+}

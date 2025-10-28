@@ -1,0 +1,26 @@
+{
+  "dataset_name": "AI Farming Calendar",
+  "num_samples": 5000,
+  "num_crops": 7,
+  "num_practices": 10,
+  "features": [
+    "crop",
+    "planting_date",
+    "days_since_planting",
+    "growth_stage",
+    "season",
+    "county",
+    "soil_type",
+    "temperature",
+    "rainfall_mm",
+    "pest_pressure",
+    "disease_occurrence"
+  ],
+  "targets": [
+    "next_practice",
+    "days_until_practice",
+    "priority"
+  ],
+  "created_at": "2025-10-28T04:23:19.586890",
+  "description": "Dataset for predicting next farming practice with timing and priority"
+}

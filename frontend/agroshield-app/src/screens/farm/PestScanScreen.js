@@ -215,10 +215,71 @@ const PestScanScreen = ({ route, navigation }) => {
                       {(result.confidence * 100).toFixed(1)}%
                     </Text>
                   </View>
+                  {result.cv_analysis?.model_used && (
+                    <View style={styles.modelRow}>
+                      <MaterialCommunityIcons name="brain" size={16} color="#666" />
+                      <Text style={styles.modelText}>
+                        {result.cv_analysis.model_used === 'ai_calendar_random_forest' ? 'AI Model' : 
+                         result.cv_analysis.model_used === 'fallback_simulation' ? 'Simulation' : 
+                         'ML Model'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
               <Text style={styles.description}>{result.description}</Text>
+              
+              {/* ML Alternative Predictions */}
+              {result.cv_analysis?.top_predictions && result.cv_analysis.top_predictions.length > 1 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>🤖 ML Alternative Diagnoses:</Text>
+                  {result.cv_analysis.top_predictions.slice(1, 4).map((prediction, index) => (
+                    <View key={index} style={styles.alternativeItem}>
+                      <View style={styles.alternativeLeft}>
+                        <MaterialCommunityIcons
+                          name="circle-small"
+                          size={20}
+                          color={theme.colors.primary}
+                        />
+                        <Text style={styles.alternativeText}>
+                          {prediction.class || prediction.pest_type || prediction.disease_type}
+                        </Text>
+                      </View>
+                      <Text style={styles.alternativeConfidence}>
+                        {(prediction.confidence * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              {/* Pest & Disease Breakdown */}
+              {result.cv_analysis?.pest_type && result.cv_analysis?.disease_type && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>📊 Detailed Analysis:</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>🐛 Pest:</Text>
+                    <Text style={styles.detailValue}>
+                      {result.cv_analysis.pest_type} ({(result.cv_analysis.pest_confidence * 100).toFixed(0)}%)
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>🦠 Disease:</Text>
+                    <Text style={styles.detailValue}>
+                      {result.cv_analysis.disease_type} ({(result.cv_analysis.disease_confidence * 100).toFixed(0)}%)
+                    </Text>
+                  </View>
+                  {result.cv_analysis.is_healthy !== undefined && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>🌿 Health Status:</Text>
+                      <Text style={[styles.detailValue, { color: result.cv_analysis.is_healthy ? theme.colors.success : theme.colors.error }]}>
+                        {result.cv_analysis.is_healthy ? 'Healthy' : 'Unhealthy'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
               {result.common_causes && (
                 <View style={styles.section}>
@@ -443,6 +504,60 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: 'bold',
     color: theme.colors.primary,
+  },
+  modelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  modelText: {
+    ...typography.caption,
+    color: '#666',
+    marginLeft: 4,
+    fontStyle: 'italic',
+  },
+  alternativeItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 8,
+    marginBottom: spacing.xs,
+  },
+  alternativeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  alternativeText: {
+    ...typography.body,
+    color: theme.colors.text,
+    marginLeft: spacing.xs,
+    textTransform: 'capitalize',
+  },
+  alternativeConfidence: {
+    ...typography.caption,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  detailLabel: {
+    ...typography.body,
+    color: theme.colors.placeholder,
+  },
+  detailValue: {
+    ...typography.body,
+    fontWeight: '600',
+    color: theme.colors.text,
   },
   description: {
     ...typography.body,

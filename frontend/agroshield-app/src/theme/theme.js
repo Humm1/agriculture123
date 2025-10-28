@@ -21,10 +21,13 @@ export const theme = {
     
     // Nature-Inspired Palette
     cropGold: '#FDD835',       // Ripe Wheat
+    harvestOrange: '#FF9800',  // Harvest Season
     skyBlue: '#42A5F5',        // Clear Sky
     waterBlue: '#26C6DA',      // Irrigation
     sunYellow: '#FFEB3B',      // Sunshine
     soilBrown: '#795548',      // Fertile Soil
+    earthBrown: '#6D4C41',     // Rich Earth
+    sunsetOrange: '#FF6F00',   // Sunset
     
     // Functional Colors
     background: '#F1F8F4',     // Soft Green Tint

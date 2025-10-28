@@ -4,21 +4,8 @@ import { View, Text, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Sc
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import Dashboard from "../../../Dashboard";
 import { useAuth } from "../../context/AuthContext";
-import { fetchUserPlots } from "../../../api/plots";
-
-// Import professional UI components
-import {
-  ProfessionalHeader,
-  ProfessionalCard,
-  MetricCard,
-  ProfessionalButton,
-  SelectInput,
-  theme,
-  layout,
-  typography
-} from '../../components/common';
+import { fetchUserPlots } from "../../api/plots";
 
 const API_BASE = "https://urchin-app-86rjy.ondigitalocean.app/api/advanced-growth";
 
@@ -433,31 +420,9 @@ export default function GrowthTrackingScreen({ route, navigation }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      {/* Professional Agricultural Header */}
-      <ProfessionalHeader
-        title="Growth Tracking"
-        subtitle={selectedPlotDetails?.name ? `Plot: ${selectedPlotDetails.name}` : "Farm Management"}
-        variant="gradient"
-        gradient={[theme.colors.primary, theme.colors.secondary]}
-        rightActions={[
-          {
-            icon: <MaterialCommunityIcons name="refresh" size={24} color={theme.colors.textOnPrimary} />,
-            onPress: () => {
-              if (selectedPlotId) {
-                loadPlotDetails(selectedPlotId);
-              }
-            }
-          },
-          selectedPlotId ? {
-            icon: <MaterialCommunityIcons name="chart-line" size={24} color={theme.colors.textOnPrimary} />,
-            onPress: () => navigation.navigate('PlotDetails', { plotId: selectedPlotId })
-          } : null
-        ].filter(Boolean)}
-      />
-      
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       {/* Plot Selector - Always visible */}
-      <View style={[styles.plotSelectorContainer, { backgroundColor: theme.colors.surface }]}>
+      <View style={styles.plotSelectorContainer}>
         <View style={styles.plotSelectorHeader}>
           <Text style={styles.plotSelectorLabel}>
             {allPlots.length === 0 ? 'No Plots Yet' : allPlots.length === 1 ? 'My Plot' : 'Select Plot'}
@@ -523,92 +488,6 @@ export default function GrowthTrackingScreen({ route, navigation }) {
               
               return (
               <ScrollView style={styles.plotDetailsCard} nestedScrollEnabled={true}>
-                {/* Plot Overview Section */}
-                <View style={styles.overviewSection}>
-                  <Text style={styles.plotNameTitle}>
-                    {selectedPlotDetails.plot.plot_name || selectedPlotDetails.plot.crop_type || 'My Plot'}
-                  </Text>
-                  {selectedPlotDetails.is_demo && (
-                    <View style={styles.demoBadge}>
-                      <Text style={styles.demoText}>DEMO</Text>
-                    </View>
-                  )}
-                  
-                  <View style={styles.overviewGrid}>
-                    <View style={styles.overviewItem}>
-                      <MaterialCommunityIcons name="sprout" size={24} color="#4CAF50" />
-                      <Text style={styles.overviewLabel}>Crop</Text>
-                      <Text style={styles.overviewValue}>
-                        {selectedPlotDetails.plot.crop_type || 'Unknown'}
-                      </Text>
-                      {selectedPlotDetails.plot.variety && (
-                        <Text style={styles.overviewSubValue}>
-                          {selectedPlotDetails.plot.variety}
-                        </Text>
-                      )}
-                    </View>
-                    
-                    <View style={styles.overviewItem}>
-                      <MaterialCommunityIcons name="texture-box" size={24} color="#2196F3" />
-                      <Text style={styles.overviewLabel}>Area</Text>
-                      <Text style={styles.overviewValue}>
-                        {selectedPlotDetails.plot.area_size || '0'} {selectedPlotDetails.plot.area_unit || 'sqm'}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.overviewItem}>
-                      <MaterialCommunityIcons name="calendar" size={24} color="#FF9800" />
-                      <Text style={styles.overviewLabel}>Planted</Text>
-                      <Text style={styles.overviewValue}>
-                        {selectedPlotDetails.plot.planting_date 
-                          ? new Date(selectedPlotDetails.plot.planting_date).toLocaleDateString()
-                          : 'Not set'}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.overviewItem}>
-                      <MaterialCommunityIcons name="map-marker" size={24} color="#F44336" />
-                      <Text style={styles.overviewLabel}>Location</Text>
-                      <Text style={styles.overviewValue}>
-                        {(() => {
-                          const loc = selectedPlotDetails.plot.location;
-                          if (!loc) return 'Not specified';
-                          if (typeof loc === 'string') return loc;
-                          if (typeof loc === 'object' && loc.latitude && loc.longitude) {
-                            return `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`;
-                          }
-                          return 'Not specified';
-                        })()}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  {selectedPlotDetails.plot.notes && (
-                    <View style={styles.notesBox}>
-                      <Text style={styles.notesLabel}>📝 Notes:</Text>
-                      <Text style={styles.notesText}>{selectedPlotDetails.plot.notes}</Text>
-                    </View>
-                  )}
-                </View>
-                
-                {/* Plot Images */}
-                {selectedPlotDetails.images && selectedPlotDetails.images.length > 0 && (
-                  <View style={styles.imagesSection}>
-                    <Text style={styles.sectionTitle}>📸 Plot Images ({selectedPlotDetails.images.length})</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery}>
-                      {selectedPlotDetails.images.map((img, index) => (
-                        <View key={index} style={styles.imageItem}>
-                          <Image source={{ uri: img.image_url }} style={styles.plotImage} />
-                          <Text style={styles.imageType}>{img.image_type}</Text>
-                          <Text style={styles.imageDate}>
-                            {new Date(img.captured_at).toLocaleDateString()}
-                          </Text>
-                        </View>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-
                 {/* AI Disease & Pest Detection */}
                 {(() => {
                   const pestAnalysis = selectedPlotDetails.images?.find(
@@ -1168,9 +1047,6 @@ export default function GrowthTrackingScreen({ route, navigation }) {
           </View>
         )}
       </View>
-      
-      {/* Dashboard */}
-      <Dashboard selectedPlotId={selectedPlotId} currentUserId={currentUserId} />
       
       {/* Floating Action Button for Create Plot */}
       <TouchableOpacity

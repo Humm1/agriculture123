@@ -16,6 +16,9 @@ import SoilAnalysisScreen from '../screens/farmer/SoilAnalysisScreen';
 import BudgetCalculatorScreen from '../screens/farmer/BudgetCalculatorScreen';
 import EditLocationScreen from '../screens/farmer/EditLocationScreen';
 import FarmerMarketplace from '../screens/FarmerMarketplace';
+import GrowthTrackingScreen from '../screens/farmer/GrowthTrackingScreen';
+import CreatePlotScreen from '../screens/farmer/CreatePlotScreen';
+import PlotDetailsScreen from '../screens/farmer/PlotDetailsScreen';
 
 // AI Intelligence Screens
 import StorageBLEScreen from '../screens/StorageBLE';
@@ -76,35 +79,24 @@ const FarmerTabs = () => (
       },
       tabBarActiveTintColor: '#4CAF50',
       tabBarInactiveTintColor: 'gray',
-      headerShown: true,
-      headerStyle: {
-        backgroundColor: '#4CAF50',
-      },
-      headerTintColor: '#fff',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
+      headerShown: false,
     })}
   >
     <Tab.Screen 
       name="Dashboard" 
       component={FarmerDashboard}
-      options={{ title: 'Farmer Dashboard' }}
+      options={{ 
+        title: 'Farmer Dashboard',
+        headerShown: false
+      }}
     />
     <Tab.Screen 
       name="Marketplace" 
       component={FarmerMarketplace}
-      options={{ title: 'Marketplace' }}
-    />
-    <Tab.Screen 
-      name="MyListings" 
-      component={HomeScreen}
-      options={{ title: 'My Listings' }}
-    />
-    <Tab.Screen 
-      name="Profile" 
-      component={HomeScreen}
-      options={{ title: 'Profile' }}
+      options={{ 
+        title: 'Marketplace',
+        headerShown: false
+      }}
     />
   </Tab.Navigator>
 );
@@ -165,10 +157,28 @@ const FarmerDashboard = () => (
     />
     <Stack.Screen 
       name="GrowthTracking" 
-      component={HomeScreen}
+      component={GrowthTrackingScreen}
       options={{ 
         title: 'Growth Tracking',
-        headerStyle: { backgroundColor: '#009688' },
+        headerStyle: { backgroundColor: '#4CAF50' },
+        headerTintColor: '#FFF'
+      }}
+    />
+    <Stack.Screen 
+      name="CreatePlot" 
+      component={CreatePlotScreen}
+      options={{ 
+        title: 'Create New Plot',
+        headerStyle: { backgroundColor: '#4CAF50' },
+        headerTintColor: '#FFF'
+      }}
+    />
+    <Stack.Screen 
+      name="PlotDetails" 
+      component={PlotDetailsScreen}
+      options={{ 
+        title: 'Plot Details',
+        headerStyle: { backgroundColor: '#4CAF50' },
         headerTintColor: '#FFF'
       }}
     />
@@ -282,21 +292,6 @@ const BuyerTabs = () => (
       name="Browse" 
       component={BuyerMarketplace}
       options={{ title: 'Browse Produce' }}
-    />
-    <Tab.Screen 
-      name="MyOrders" 
-      component={HomeScreen}
-      options={{ title: 'My Orders' }}
-    />
-    <Tab.Screen 
-      name="SupplyForecast" 
-      component={HomeScreen}
-      options={{ title: 'Supply Forecast' }}
-    />
-    <Tab.Screen 
-      name="Profile" 
-      component={HomeScreen}
-      options={{ title: 'Profile' }}
     />
   </Tab.Navigator>
 );

@@ -1,0 +1,33 @@
+{
+  "description": "Crop yield prediction dataset with environmental and management factors",
+  "features": [
+    "crop",
+    "area_hectares",
+    "soil_quality_index",
+    "irrigation_system",
+    "fertilizer_kg_per_hectare",
+    "avg_temperature_c",
+    "total_rainfall_mm",
+    "sunshine_hours",
+    "pest_pressure",
+    "disease_occurrence",
+    "yield_per_hectare_tons",
+    "total_yield_tons",
+    "quality_grade",
+    "planting_month",
+    "harvest_month"
+  ],
+  "records": 1000,
+  "crops": [
+    "maize",
+    "wheat",
+    "rice",
+    "tomatoes",
+    "potatoes",
+    "beans",
+    "cassava"
+  ],
+  "target_variable": "yield_per_hectare_tons",
+  "use_case": "Regression model for yield prediction",
+  "model_type": "Random Forest / Gradient Boosting"
+}

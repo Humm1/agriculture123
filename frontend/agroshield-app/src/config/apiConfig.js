@@ -11,11 +11,11 @@ export const getApiBaseUrl = () => {
   }
 
   // Mobile app configuration
-  // Development: Local network IP
-  // Production: Vercel backend URL (after deployment)
+  // Development: Use production backend (local backend at 192.168.137.1:8000 not running)
+  // Production: DigitalOcean backend URL
   return __DEV__ 
-    ? 'http://192.168.137.1:8000/api'  // Development - Local backend on WiFi
-    : 'https://agropulse-ai.vercel.app/api';  // Production - Vercel backend
+    ? 'https://urchin-app-86rjy.ondigitalocean.app/api'  // Development - Using production backend
+    : 'https://urchin-app-86rjy.ondigitalocean.app/api';  // Production - DigitalOcean backend
 };
 
 // API Configuration

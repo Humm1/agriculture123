@@ -167,6 +167,23 @@ export const pestAPI = {
     return response.data;
   },
 
+  // Scan soil with ML model
+  scanSoil: async (imageFile) => {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageFile,
+      type: 'image/jpeg',
+      name: 'soil.jpg',
+    });
+    
+    const response = await api.post('/scan/soil', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // Get IPM recommendations
   getIPMRecommendations: async (disease, severity) => {
     const response = await api.post('/scan/ipm-recommendations', {

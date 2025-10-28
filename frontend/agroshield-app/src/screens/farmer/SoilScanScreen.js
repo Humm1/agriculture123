@@ -18,7 +18,7 @@ import { Button, Card, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext.js';
-import { uploadAPI, farmAPI, predictionAPI } from '../../services/api';
+import { uploadAPI, farmAPI, predictionAPI, pestAPI } from '../../services/api';
 import locationService from '../../services/locationService';
 
 export default function SoilScanScreen({ navigation }) {
@@ -101,7 +101,10 @@ export default function SoilScanScreen({ navigation }) {
       // Get current location
       const location = await locationService.getCurrentLocation();
 
-      // Upload photos
+      // Use ML model for soil analysis on wet photo
+      const mlSoilAnalysis = await pestAPI.scanSoil(wetPhoto);
+
+      // Upload photos for record keeping
       const wetUpload = await uploadAPI.uploadImage(wetPhoto, 'soil');
       const dryUpload = await uploadAPI.uploadImage(dryPhoto, 'soil');
 
@@ -109,17 +112,28 @@ export default function SoilScanScreen({ navigation }) {
         throw new Error('Failed to upload photos');
       }
 
-      // Perform AI soil analysis
-      const soilAnalysis = await predictionAPI.predictSoilQuality({
+      // Perform traditional AI soil analysis as backup
+      const traditionalAnalysis = await predictionAPI.predictSoilQuality({
         wet_image_url: wetUpload.url,
         dry_image_url: dryUpload.url,
         latitude: location.latitude,
         longitude: location.longitude,
       });
 
+      // Combine ML and traditional analysis
+      const combinedAnalysis = {
+        ...traditionalAnalysis,
+        ml_prediction: mlSoilAnalysis,
+        soil_type: mlSoilAnalysis.soil_type || traditionalAnalysis.soil_type,
+        ml_confidence: mlSoilAnalysis.confidence,
+        characteristics: mlSoilAnalysis.characteristics,
+        recommendations: mlSoilAnalysis.recommendations,
+        fertility_estimate: mlSoilAnalysis.fertility_estimate,
+      };
+
       // Navigate to results screen
       navigation.navigate('SoilAnalysis', {
-        analysis: soilAnalysis,
+        analysis: combinedAnalysis,
         photos: {
           wet: wetUpload.url,
           dry: dryUpload.url,

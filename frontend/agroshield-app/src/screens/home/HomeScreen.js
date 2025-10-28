@@ -109,6 +109,18 @@ const HomeScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('FarmTab', { screen: 'PestScan' })}
           />
           <QuickActionButton
+            icon="brain"
+            label="AI Training"
+            color="#9C27B0"
+            onPress={() => navigation.navigate('FarmTab', { screen: 'ModelTraining' })}
+          />
+          <QuickActionButton
+            icon="calendar-clock"
+            label="AI Calendar"
+            color="#28a745"
+            onPress={() => navigation.navigate('FarmTab', { screen: 'AICalendar' })}
+          />
+          <QuickActionButton
             icon="pencil"
             label="New Post"
             color={theme.colors.secondary}
