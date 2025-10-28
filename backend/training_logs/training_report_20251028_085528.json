@@ -1,0 +1,51 @@
+{
+  "training_session": {
+    "timestamp": "2025-10-28T08:53:02.436292",
+    "duration": "N/A",
+    "completed_steps": [
+      "synthetic_data_generation",
+      "data_merge_skipped",
+      "model_validation"
+    ]
+  },
+  "data_sources": {
+    "public_apis": {
+      "plantvillage": "54,000+ disease images",
+      "inaturalist": "500+ pest observations",
+      "fao_soilgrids": "Global soil properties",
+      "openweathermap": "Climate data",
+      "gbif": "Species occurrences"
+    },
+    "synthetic": {
+      "pest_detection": "1,050 images",
+      "disease_detection": "1,400 images",
+      "soil_diagnostics": "1,050 images",
+      "yield_prediction": "1,000 records",
+      "climate_prediction": "3,650 timesteps"
+    }
+  },
+  "models_trained": [
+    {
+      "name": "ai_calendar_model.pkl",
+      "size_mb": 15.69,
+      "created": "2025-10-28T04:23:56.668741",
+      "type": ".pkl"
+    }
+  ],
+  "errors": [
+    {
+      "step": "public_data_collection",
+      "error": "Traceback (most recent call last):\n  File \"c:\\Users\\Codeternal\\Desktop\\agroshield\\backend\\collect_public_api_data.py\", line 47, in <module>\n    print(\"\\U0001f30d AgroShield Public API Data Collection System\")\n  File \"C:\\Users\\Codeternal\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f30d' in position 0: character maps to <undefined>\n"
+    },
+    {
+      "step": "model_training",
+      "error": "Traceback (most recent call last):\n  File \"c:\\Users\\Codeternal\\Desktop\\agroshield\\backend\\train_models_example.py\", line 468, in <module>\n    main()\n  File \"c:\\Users\\Codeternal\\Desktop\\agroshield\\backend\\train_models_example.py\", line 428, in main\n    print(\"\\U0001f680 AgroShield Model Training Examples\")\n  File \"C:\\Users\\Codeternal\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f680' in position 0: character maps to <undefined>\n"
+    }
+  ],
+  "next_steps": [
+    "Test models with real farm images",
+    "Deploy to production backend",
+    "Monitor model performance",
+    "Collect user feedback for retraining"
+  ]
+}

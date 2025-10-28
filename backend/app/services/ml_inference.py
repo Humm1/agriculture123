@@ -15,6 +15,9 @@ from PIL import Image
 import requests
 from io import BytesIO
 
+# Import central model manager
+from app.services.model_manager import get_model_manager
+
 # TensorFlow
 try:
     import tensorflow as tf
@@ -22,7 +25,7 @@ try:
     HAS_TF = True
 except ImportError:
     HAS_TF = False
-    print("⚠️ TensorFlow not installed. ML inference will use fallback mode.")
+    print("[ML INFERENCE] TensorFlow not installed. Using fallback mode.")
 
 # Scikit-learn
 try:
@@ -36,16 +39,33 @@ class ModelInferenceService:
     """Service for loading trained models and making predictions"""
     
     def __init__(self):
+        # Use central model manager
+        self.model_manager = get_model_manager()
+        
         self.base_dir = Path(__file__).parent.parent.parent
         self.models_dir = self.base_dir / "trained_models"
         
-        # Loaded models cache
+        # Legacy support - will be deprecated
         self.models = {}
         self.class_mappings = {}
         self.scalers = {}
         
-        # Model paths
-        self.model_paths = {
+        print("[ML INFERENCE] ML Inference Service initialized with Model Manager")
+    
+    def _load_model(self, model_type: str):
+        """Load a trained model into memory using Model Manager"""
+        # Try to get from Model Manager first
+        model = self.model_manager.get_model(model_type)
+        
+        if model is not None:
+            self.models[model_type] = model  # Cache locally for compatibility
+            return model
+        
+        # Fallback to old method if model manager doesn't have it
+        print(f"[ML INFERENCE] Model {model_type} not available from Model Manager, using fallback")
+        
+        # Legacy fallback code...
+        model_paths = {
             "pest_detection": self.models_dir / "pest_detection_model.h5",
             "disease_detection": self.models_dir / "disease_detection_model.h5",
             "ai_calendar": self.models_dir / "ai_calendar_model.pkl",
@@ -54,20 +74,7 @@ class ModelInferenceService:
             "climate_prediction": self.models_dir / "climate_prediction_model.h5",
         }
         
-        self.class_mapping_paths = {
-            "pest_detection": self.models_dir / "pest_detection_classes.json",
-            "disease_detection": self.models_dir / "disease_detection_classes.json",
-            "soil_diagnostics": self.models_dir / "soil_diagnostics_classes.json",
-        }
-        
-        print("🤖 ML Inference Service initialized")
-    
-    def _load_model(self, model_type: str):
-        """Load a trained model into memory"""
-        if model_type in self.models:
-            return self.models[model_type]
-        
-        model_path = self.model_paths.get(model_type)
+        model_path = model_paths.get(model_type)
         if not model_path or not model_path.exists():
             raise FileNotFoundError(f"Model not found: {model_path}")
         
@@ -76,16 +83,16 @@ class ModelInferenceService:
             if not HAS_TF:
                 raise RuntimeError("TensorFlow required for .h5 models")
             model = keras.models.load_model(str(model_path))
-            print(f"✅ Loaded {model_type} model from {model_path}")
+            print(f"[OK] Loaded {model_type} model from {model_path}")
         elif model_path.suffix == '.pkl':
             if not HAS_SKLEARN:
                 raise RuntimeError("Scikit-learn required for .pkl models")
             with open(model_path, 'rb') as f:
                 data = pickle.load(f)
-                model = data['model']
+                model = data['model'] if 'model' in data else data
                 if 'encoders' in data:
                     self.scalers[model_type] = data.get('encoders')
-            print(f"✅ Loaded {model_type} model from {model_path}")
+            print(f"[OK] Loaded {model_type} model from {model_path}")
         else:
             raise ValueError(f"Unsupported model format: {model_path.suffix}")
         
@@ -94,10 +101,21 @@ class ModelInferenceService:
     
     def _load_class_mapping(self, model_type: str) -> Dict:
         """Load class mapping for classification models"""
-        if model_type in self.class_mappings:
-            return self.class_mappings[model_type]
+        # Try Model Manager first
+        mapping = self.model_manager.get_class_mapping(model_type)
         
-        mapping_path = self.class_mapping_paths.get(model_type)
+        if mapping:
+            self.class_mappings[model_type] = mapping
+            return mapping
+        
+        # Fallback to local file
+        class_mapping_paths = {
+            "pest_detection": self.models_dir / "pest_detection_classes.json",
+            "disease_detection": self.models_dir / "disease_detection_classes.json",
+            "soil_diagnostics": self.models_dir / "soil_diagnostics_classes.json",
+        }
+        
+        mapping_path = class_mapping_paths.get(model_type)
         if not mapping_path or not mapping_path.exists():
             return {}
         

@@ -2016,6 +2016,15 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  galleryHeader: {
+    marginBottom: 12,
+  },
+  gallerySubtitle: {
+    fontSize: 12,
+    color: '#8B7355',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   imageCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,

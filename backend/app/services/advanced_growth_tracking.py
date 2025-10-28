@@ -24,6 +24,14 @@ try:
 except ImportError:
     TENSORFLOW_AVAILABLE = False
 
+# Import centralized model manager
+try:
+    from .model_manager import get_model_manager
+    MODEL_MANAGER_AVAILABLE = True
+except ImportError:
+    MODEL_MANAGER_AVAILABLE = False
+    print("[GROWTH] Model manager not available")
+
 # Import calendar integration
 try:
     from .growth_calendar_integration import (
@@ -35,7 +43,7 @@ try:
     CALENDAR_INTEGRATION_AVAILABLE = True
 except ImportError:
     CALENDAR_INTEGRATION_AVAILABLE = False
-    print("Calendar integration not available")
+    print("[GROWTH] Calendar integration not available")
 
 
 class AdvancedGrowthTrackingService:
@@ -51,30 +59,37 @@ class AdvancedGrowthTrackingService:
         self.supabase = supabase_client
         self.models_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'models')
         
-        # Initialize AI models
+        # Use centralized model manager
+        self.model_manager = None
+        if MODEL_MANAGER_AVAILABLE:
+            self.model_manager = get_model_manager()
+            print("[GROWTH] Connected to centralized model manager")
+        
+        # Legacy model references (for backward compatibility)
         self.soil_model = None
         self.health_model = None
         self.growth_model = None
-        
-        if TENSORFLOW_AVAILABLE:
-            self._load_models()
     
-    def _load_models(self):
-        """Load AI models for analysis"""
+    def _get_model(self, model_name: str):
+        """Get model from centralized manager or legacy system"""
+        if self.model_manager:
+            try:
+                return self.model_manager.get_model(model_name)
+            except Exception as e:
+                print(f"[GROWTH] Model manager failed for {model_name}: {e}")
+        
+        # Fallback to legacy loading
+        return self._load_legacy_model(model_name)
+    
+    def _load_legacy_model(self, model_name: str):
+        """Legacy model loading (fallback)"""
         try:
-            soil_model_path = os.path.join(self.models_dir, 'soil_analysis.h5')
-            if os.path.exists(soil_model_path):
-                self.soil_model = keras.models.load_model(soil_model_path)
-            
-            health_model_path = os.path.join(self.models_dir, 'plant_health.h5')
-            if os.path.exists(health_model_path):
-                self.health_model = keras.models.load_model(health_model_path)
-            
-            growth_model_path = os.path.join(self.models_dir, 'growth_prediction.h5')
-            if os.path.exists(growth_model_path):
-                self.growth_model = keras.models.load_model(growth_model_path)
+            model_path = os.path.join(self.models_dir, f'{model_name}.h5')
+            if os.path.exists(model_path):
+                return keras.models.load_model(model_path)
         except Exception as e:
-            print(f"Error loading models: {e}")
+            print(f"[GROWTH] Error loading legacy model {model_name}: {e}")
+        return None
     
     # ============================================================
     # 1. DIGITAL PLOT SETUP

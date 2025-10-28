@@ -14,6 +14,13 @@ from pathlib import Path
 from app.services.advanced_growth_tracking import AdvancedGrowthTrackingService
 from app.services.supabase_auth import supabase_admin
 
+# Import model manager for AI capabilities check
+try:
+    from app.services.model_manager import get_model_manager
+    MODEL_MANAGER_AVAILABLE = True
+except ImportError:
+    MODEL_MANAGER_AVAILABLE = False
+
 router = APIRouter()
 
 # Test endpoint to verify routes are working
@@ -1975,6 +1982,297 @@ async def get_user_stats(user_id: str):
                 ]
             }
         }
-    
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# ML MODELS INTEGRATION ENDPOINTS
+# ============================================================
+
+@router.get("/ai/models/status")
+async def get_ai_models_status():
+    """
+    Get AI models availability status for growth tracking features
+    
+    Returns which AI features are available based on trained models
+    """
+    try:
+        if not MODEL_MANAGER_AVAILABLE:
+            return {
+                "success": True,
+                "models_available": False,
+                "message": "Model manager not available - using rule-based analysis",
+                "features": {
+                    "soil_analysis": False,
+                    "plant_health": False,
+                    "pest_detection": False,
+                    "disease_detection": False,
+                    "yield_prediction": False,
+                    "growth_prediction": False
+                }
+            }
+        
+        model_manager = get_model_manager()
+        models_list = model_manager.list_available_models()
+        
+        # Map models to growth tracking features
+        features = {
+            "soil_analysis": models_list.get("soil_diagnostics", {}).get("available", False),
+            "plant_health": models_list.get("plant_health", {}).get("available", False),
+            "pest_detection": models_list.get("pest_detection", {}).get("available", False),
+            "disease_detection": models_list.get("disease_detection", {}).get("available", False),
+            "yield_prediction": models_list.get("yield_prediction", {}).get("available", False),
+            "growth_prediction": models_list.get("ai_calendar", {}).get("available", False),
+            "storage_assessment": models_list.get("storage_assessment", {}).get("available", False)
+        }
+        
+        available_count = sum(1 for v in features.values() if v)
+        
+        return {
+            "success": True,
+            "models_available": True,
+            "features": features,
+            "summary": {
+                "total_features": len(features),
+                "available_features": available_count,
+                "percentage_ready": round((available_count / len(features)) * 100, 1)
+            },
+            "message": f"{available_count}/{len(features)} AI features available"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "features": {
+                "soil_analysis": False,
+                "plant_health": False,
+                "pest_detection": False,
+                "disease_detection": False,
+                "yield_prediction": False,
+                "growth_prediction": False
+            }
+        }
+
+
+@router.get("/ai/models/{feature}/info")
+async def get_feature_model_info(feature: str):
+    """
+    Get detailed information about a specific AI feature model
+    
+    Supported features:
+    - soil_analysis
+    - plant_health
+    - pest_detection
+    - disease_detection
+    - yield_prediction
+    - growth_prediction
+    """
+    try:
+        if not MODEL_MANAGER_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Model manager not available"
+            )
+        
+        # Map feature names to model names
+        feature_to_model = {
+            "soil_analysis": "soil_diagnostics",
+            "plant_health": "plant_health",
+            "pest_detection": "pest_detection",
+            "disease_detection": "disease_detection",
+            "yield_prediction": "yield_prediction",
+            "growth_prediction": "ai_calendar",
+            "storage_assessment": "storage_assessment"
+        }
+        
+        if feature not in feature_to_model:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown feature: {feature}. Supported: {list(feature_to_model.keys())}"
+            )
+        
+        model_name = feature_to_model[feature]
+        model_manager = get_model_manager()
+        
+        # Get model info
+        models_list = model_manager.list_available_models()
+        model_info = models_list.get(model_name, {})
+        
+        if not model_info.get("available", False):
+            return {
+                "success": True,
+                "feature": feature,
+                "model_name": model_name,
+                "available": False,
+                "message": f"Model for {feature} not yet trained",
+                "train_command": "python backend/master_train_models.py --all"
+            }
+        
+        return {
+            "success": True,
+            "feature": feature,
+            "model_name": model_name,
+            "available": True,
+            "loaded": model_info.get("loaded", False),
+            "type": model_info.get("type", "unknown"),
+            "description": model_info.get("description", ""),
+            "capabilities": _get_feature_capabilities(feature)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ai/models/{feature}/load")
+async def load_feature_model(feature: str):
+    """
+    Preload a specific AI feature model into memory
+    
+    Useful for faster predictions when you know the feature will be used
+    """
+    try:
+        if not MODEL_MANAGER_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Model manager not available"
+            )
+        
+        feature_to_model = {
+            "soil_analysis": "soil_diagnostics",
+            "plant_health": "plant_health",
+            "pest_detection": "pest_detection",
+            "disease_detection": "disease_detection",
+            "yield_prediction": "yield_prediction",
+            "growth_prediction": "ai_calendar",
+            "storage_assessment": "storage_assessment"
+        }
+        
+        if feature not in feature_to_model:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown feature: {feature}"
+            )
+        
+        model_name = feature_to_model[feature]
+        model_manager = get_model_manager()
+        
+        # Load the model
+        model = model_manager.get_model(model_name)
+        
+        if model is None:
+            return {
+                "success": False,
+                "feature": feature,
+                "message": f"Model for {feature} not available - needs training"
+            }
+        
+        return {
+            "success": True,
+            "feature": feature,
+            "model_name": model_name,
+            "loaded": True,
+            "message": f"Model loaded successfully for {feature}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/features/available")
+async def get_available_features():
+    """
+    Quick check: Which AI features are currently available?
+    
+    Returns simple list of available features for UI feature flags
+    """
+    try:
+        status = await get_ai_models_status()
+        
+        if not status.get("models_available", False):
+            return {
+                "success": True,
+                "available_features": [],
+                "message": "No AI models available - using rule-based analysis"
+            }
+        
+        features = status.get("features", {})
+        available = [name for name, available in features.items() if available]
+        
+        return {
+            "success": True,
+            "available_features": available,
+            "count": len(available),
+            "percentage_ready": status.get("summary", {}).get("percentage_ready", 0)
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "available_features": [],
+            "error": str(e)
+        }
+
+
+def _get_feature_capabilities(feature: str) -> List[str]:
+    """Get list of capabilities for each feature"""
+    capabilities = {
+        "soil_analysis": [
+            "Soil type classification (Clay, Sandy, Loam, etc.)",
+            "Texture analysis (Fine, Medium, Coarse)",
+            "pH range estimation",
+            "Organic matter content",
+            "Moisture level detection",
+            "Color-based nutrient indicators"
+        ],
+        "plant_health": [
+            "Overall health score (0-100)",
+            "Growth stage detection",
+            "Stress indicators",
+            "Leaf color analysis",
+            "Canopy coverage estimation",
+            "Vigor assessment"
+        ],
+        "pest_detection": [
+            "Identify 7+ common agricultural pests",
+            "Severity assessment (Low/Medium/High)",
+            "Confidence scoring",
+            "Treatment recommendations",
+            "Regional risk factors"
+        ],
+        "disease_detection": [
+            "Classify 15+ crop diseases",
+            "Early warning detection",
+            "Symptom pattern recognition",
+            "Spread prediction",
+            "Treatment protocols"
+        ],
+        "yield_prediction": [
+            "Harvest date forecasting",
+            "Expected yield estimation",
+            "Quality predictions",
+            "Market timing recommendations",
+            "Weather impact analysis"
+        ],
+        "growth_prediction": [
+            "Growth stage progression",
+            "Optimal care scheduling",
+            "Calendar event automation",
+            "Resource planning",
+            "Milestone tracking"
+        ],
+        "storage_assessment": [
+            "Quality degradation monitoring",
+            "Shelf life estimation",
+            "Storage condition recommendations",
+            "Spoilage risk detection"
+        ]
+    }
+    
+    return capabilities.get(feature, ["Feature capabilities not defined"])

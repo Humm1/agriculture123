@@ -13,6 +13,7 @@ Models covered:
 """
 
 import os
+import sys
 import json
 import numpy as np
 import pandas as pd
@@ -20,6 +21,13 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFilter
 import random
 from pathlib import Path
+
+# Fix Windows console encoding
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except:
+        pass
 
 # Create base directories
 BASE_DIR = Path(__file__).parent / "training_data"
@@ -42,7 +50,7 @@ for dir_path in [PEST_DIR, DISEASE_DIR, STORAGE_DIR, SOIL_DIR, PLANT_DIR, CLIMAT
 
 def generate_pest_detection_data():
     """Generate synthetic pest detection dataset"""
-    print("🐛 Generating Pest Detection Dataset...")
+    print("[PEST] Generating Pest Detection Dataset...")
     
     pests = {
         'aphids': {'count': 150, 'color': (100, 150, 100), 'size': 20},
@@ -98,7 +106,7 @@ def generate_pest_detection_data():
     with open(PEST_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(metadata)} pest detection images")
+    print(f"[OK] Generated {len(metadata)} pest detection images")
     return metadata
 
 
@@ -108,7 +116,7 @@ def generate_pest_detection_data():
 
 def generate_disease_detection_data():
     """Generate synthetic disease detection dataset"""
-    print("🦠 Generating Disease Detection Dataset...")
+    print("[DISEASE] Generating Disease Detection Dataset...")
     
     diseases = {
         'early_blight': {'count': 150, 'pattern': 'spots', 'color': (139, 69, 19)},
@@ -180,7 +188,7 @@ def generate_disease_detection_data():
     with open(DISEASE_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(metadata)} disease detection images")
+    print(f"[OK] Generated {len(metadata)} disease detection images")
     return metadata
 
 
@@ -190,7 +198,7 @@ def generate_disease_detection_data():
 
 def generate_storage_assessment_data():
     """Generate synthetic storage condition assessment dataset"""
-    print("📦 Generating Storage Assessment Dataset...")
+    print("[STORAGE] Generating Storage Assessment Dataset...")
     
     conditions = {
         'excellent': {'count': 150, 'quality': 95, 'color': (255, 220, 150)},
@@ -254,7 +262,7 @@ def generate_storage_assessment_data():
     with open(STORAGE_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(metadata)} storage assessment images")
+    print(f"[OK] Generated {len(metadata)} storage assessment images")
     return metadata
 
 
@@ -264,7 +272,7 @@ def generate_storage_assessment_data():
 
 def generate_soil_diagnostics_data():
     """Generate synthetic soil diagnostics dataset"""
-    print("🌱 Generating Soil Diagnostics Dataset...")
+    print("[SOIL] Generating Soil Diagnostics Dataset...")
     
     soil_types = {
         'sandy': {'count': 120, 'color': (210, 180, 140), 'ph': (5.5, 7.0)},
@@ -333,7 +341,7 @@ def generate_soil_diagnostics_data():
     with open(SOIL_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(metadata)} soil diagnostic images")
+    print(f"[OK] Generated {len(metadata)} soil diagnostic images")
     return metadata
 
 
@@ -343,7 +351,7 @@ def generate_soil_diagnostics_data():
 
 def generate_plant_health_data():
     """Generate synthetic plant health assessment dataset"""
-    print("🌿 Generating Plant Health Dataset...")
+    print("[PLANT] Generating Plant Health Dataset...")
     
     health_stages = {
         'seedling': {'count': 100, 'size': 30, 'color': (144, 238, 144)},
@@ -418,7 +426,7 @@ def generate_plant_health_data():
     with open(PLANT_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(metadata)} plant health images")
+    print(f"[OK] Generated {len(metadata)} plant health images")
     return metadata
 
 
@@ -428,7 +436,7 @@ def generate_plant_health_data():
 
 def generate_climate_prediction_data():
     """Generate synthetic climate time-series dataset"""
-    print("🌦️ Generating Climate Prediction Dataset...")
+    print("[CLIMATE] Generating Climate Prediction Dataset...")
     
     # Generate 2 years of daily climate data
     start_date = datetime.now() - timedelta(days=730)
@@ -480,7 +488,7 @@ def generate_climate_prediction_data():
     with open(CLIMATE_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(climate_data)} climate records")
+    print(f"[OK] Generated {len(climate_data)} climate records")
     return climate_data
 
 
@@ -490,7 +498,7 @@ def generate_climate_prediction_data():
 
 def generate_yield_prediction_data():
     """Generate synthetic crop yield prediction dataset"""
-    print("🌾 Generating Yield Prediction Dataset...")
+    print("[YIELD] Generating Yield Prediction Dataset...")
     
     crops = ['maize', 'wheat', 'rice', 'tomatoes', 'potatoes', 'beans', 'cassava']
     
@@ -567,7 +575,7 @@ def generate_yield_prediction_data():
     with open(YIELD_DIR / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"✅ Generated {len(yield_data)} yield prediction records")
+    print(f"[OK] Generated {len(yield_data)} yield prediction records")
     return yield_data
 
 
@@ -578,7 +586,7 @@ def generate_yield_prediction_data():
 def generate_all_datasets():
     """Generate all training datasets"""
     print("\n" + "="*60)
-    print("🚀 AgroShield Training Dataset Generation Started")
+    print("[*] AgroShield Training Dataset Generation Started")
     print("="*60 + "\n")
     
     # Generate all datasets
@@ -639,13 +647,13 @@ def generate_all_datasets():
         json.dump(summary, f, indent=2)
     
     print("\n" + "="*60)
-    print("✅ ALL DATASETS GENERATED SUCCESSFULLY!")
+    print("[SUCCESS] ALL DATASETS GENERATED SUCCESSFULLY!")
     print("="*60)
-    print(f"\n📊 Summary:")
+    print(f"\n[SUMMARY]")
     print(f"   Total Images: {summary['total_images']:,}")
     print(f"   Total Records: {summary['total_records']:,}")
     print(f"   Location: {BASE_DIR}")
-    print(f"\n📄 Summary report saved: {BASE_DIR / 'dataset_summary.json'}")
+    print(f"\n[REPORT] Summary saved: {BASE_DIR / 'dataset_summary.json'}")
     print("\n" + "="*60 + "\n")
 
 
