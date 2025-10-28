@@ -94,6 +94,7 @@ const CROP_DATABASE = {
     pesticidesPerHa: 10000,
     equipmentPerHa: 15000,
     yieldPerHa: 2500,
+    pricePerKg: 150,
     maturityDays: 365,
   },
 };
@@ -129,6 +130,11 @@ export default function BudgetCalculatorScreen({ route, navigation }) {
   };
 
   const calculateBudget = () => {
+    console.log('🧮 Calculate Budget clicked');
+    console.log('Selected Crop:', selectedCrop);
+    console.log('Farm Size:', farmSize);
+    console.log('Labor Cost:', laborCost);
+    
     if (!selectedCrop) {
       Alert.alert('Error', 'Please select a crop');
       return;
@@ -144,49 +150,65 @@ export default function BudgetCalculatorScreen({ route, navigation }) {
 
     setCalculating(true);
 
-    // Get crop data
-    const cropData = CROP_DATABASE[selectedCrop];
-    
-    if (!cropData) {
-      Alert.alert('Error', 'Crop data not available');
+    try {
+      // Get crop data
+      const cropData = CROP_DATABASE[selectedCrop];
+      
+      console.log('Crop Data:', cropData);
+      
+      if (!cropData) {
+        Alert.alert('Error', 'Crop data not available');
+        setCalculating(false);
+        return;
+      }
+
+      // Validate crop data has all required fields
+      if (!cropData.pricePerKg) {
+        Alert.alert('Error', `Price per kg not available for ${selectedCrop}`);
+        setCalculating(false);
+        return;
+      }
+
+      // Calculate costs
+      const costs = {
+        seeds: cropData.seedCostPerHa * size,
+        fertilizer: cropData.fertilizerPerHa * size,
+        labor: cropData.laborDaysPerHa * laborRate * size,
+        watering: cropData.wateringCostPerHa * size,
+        pesticides: cropData.pesticidesPerHa * size,
+        equipment: cropData.equipmentPerHa * size,
+      };
+
+      const totalCost = Object.values(costs).reduce((a, b) => a + b, 0);
+
+      // Calculate revenue
+      const expectedYield = cropData.yieldPerHa * size;
+      const revenue = expectedYield * cropData.pricePerKg;
+      const profit = revenue - totalCost;
+      const roi = ((profit / totalCost) * 100).toFixed(1);
+
+      const budgetResult = {
+        crop: selectedCrop,
+        farmSize: size,
+        costs,
+        totalCost,
+        expectedYield,
+        pricePerKg: cropData.pricePerKg,
+        revenue,
+        profit,
+        roi,
+        maturityDays: cropData.maturityDays,
+        breakEven: Math.ceil(totalCost / cropData.pricePerKg),
+      };
+
+      console.log('✅ Budget Result:', budgetResult);
+      setBudget(budgetResult);
+    } catch (error) {
+      console.error('❌ Calculation Error:', error);
+      Alert.alert('Error', `Failed to calculate budget: ${error.message}`);
+    } finally {
       setCalculating(false);
-      return;
     }
-
-    // Calculate costs
-    const costs = {
-      seeds: cropData.seedCostPerHa * size,
-      fertilizer: cropData.fertilizerPerHa * size,
-      labor: cropData.laborDaysPerHa * laborRate * size,
-      watering: cropData.wateringCostPerHa * size,
-      pesticides: cropData.pesticidesPerHa * size,
-      equipment: cropData.equipmentPerHa * size,
-    };
-
-    const totalCost = Object.values(costs).reduce((a, b) => a + b, 0);
-
-    // Calculate revenue
-    const expectedYield = cropData.yieldPerHa * size;
-    const revenue = expectedYield * cropData.pricePerKg;
-    const profit = revenue - totalCost;
-    const roi = ((profit / totalCost) * 100).toFixed(1);
-
-    const budgetResult = {
-      crop: selectedCrop,
-      farmSize: size,
-      costs,
-      totalCost,
-      expectedYield,
-      pricePerKg: cropData.pricePerKg,
-      revenue,
-      profit,
-      roi,
-      maturityDays: cropData.maturityDays,
-      breakEven: Math.ceil(totalCost / cropData.pricePerKg),
-    };
-
-    setBudget(budgetResult);
-    setCalculating(false);
   };
 
   const reset = () => {
