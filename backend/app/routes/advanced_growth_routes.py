@@ -21,6 +21,15 @@ try:
 except ImportError:
     MODEL_MANAGER_AVAILABLE = False
 
+# Import AI lifecycle calendar service
+try:
+    from app.services.crop_lifecycle_calendar import CropLifecycleCalendar
+    from app.services.ai_calendar_intelligence import AICalendarIntelligence
+    LIFECYCLE_CALENDAR_AVAILABLE = True
+except ImportError:
+    LIFECYCLE_CALENDAR_AVAILABLE = False
+    print("[GROWTH] Lifecycle calendar service not available")
+
 router = APIRouter()
 
 # Test endpoint to verify routes are working
@@ -821,7 +830,7 @@ async def get_plot_details(plot_id: str, user_id: str):
         plot = plot_result.data[0]
         
         # Get all images for this plot with AI analysis
-        images_result = supabase.table('plot_images').select('id, plot_id, image_type, image_url, url, captured_at, uploaded_at, created_at, ai_analysis').eq('plot_id', plot_id).order('captured_at', desc=True).execute()
+        images_result = supabase.table('plot_images').select('id, plot_id, image_type, image_url, captured_at, uploaded_at, created_at, ai_analysis').eq('plot_id', plot_id).order('captured_at', desc=True).execute()
         images = images_result.data or []
         
         # Log AI analysis data for debugging
@@ -1985,6 +1994,443 @@ async def get_user_stats(user_id: str):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# AI LIFECYCLE CALENDAR ENDPOINTS (INTEGRATED WITH GROWTH TRACKING)
+# ============================================================
+
+@router.post("/growth/{plot_id}/lifecycle-calendar")
+async def generate_growth_lifecycle_calendar(plot_id: str):
+    """
+    Generate AI-powered lifecycle calendar for a growth tracking plot
+    
+    This endpoint integrates the crop lifecycle calendar with growth tracking,
+    creating a complete season calendar based on crop stages and AI optimization.
+    
+    Returns:
+    - Growth stages with practices
+    - Milestones timeline
+    - Resource requirements
+    - Risk calendar
+    - AI optimization status
+    """
+    try:
+        if not LIFECYCLE_CALENDAR_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Lifecycle calendar service not available"
+            )
+        
+        supabase = supabase_admin
+        
+        # Get plot details
+        plot = supabase.table('digital_plots')\
+            .select('*')\
+            .eq('id', plot_id)\
+            .single()\
+            .execute()
+        
+        if not plot.data:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot_data = plot.data
+        
+        # Extract crop details
+        crop_name = plot_data.get('crop_name', 'maize').lower()
+        variety = plot_data.get('variety', 'h614').lower()
+        planting_date = plot_data.get('planting_date')
+        location = plot_data.get('location', {})
+        
+        # Generate lifecycle calendar
+        calendar_service = CropLifecycleCalendar()
+        calendar = calendar_service.generate_lifecycle_calendar(
+            crop=crop_name,
+            variety=variety,
+            planting_date=planting_date,
+            plot_id=plot_id,
+            location=location
+        )
+        
+        return {
+            "success": True,
+            "plot_id": plot_id,
+            "plot_name": plot_data.get('plot_name'),
+            "calendar": calendar,
+            "ai_enabled": calendar.get('ai_enabled', False),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating calendar: {str(e)}")
+
+
+@router.get("/growth/{plot_id}/current-stage")
+async def get_current_growth_stage(plot_id: str):
+    """
+    Get current growth stage for a plot
+    
+    Returns:
+    - Current stage name
+    - Days since planting
+    - Stage progress percentage
+    - Upcoming practices for this stage
+    """
+    try:
+        if not LIFECYCLE_CALENDAR_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Lifecycle calendar service not available"
+            )
+        
+        supabase = supabase_admin
+        
+        # Get plot details
+        plot = supabase.table('digital_plots')\
+            .select('*')\
+            .eq('id', plot_id)\
+            .single()\
+            .execute()
+        
+        if not plot.data:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot_data = plot.data
+        planting_date = datetime.fromisoformat(plot_data['planting_date'])
+        days_since_planting = (datetime.utcnow() - planting_date).days
+        
+        # Get lifecycle calendar
+        crop_name = plot_data.get('crop_name', 'maize').lower()
+        variety = plot_data.get('variety', 'h614').lower()
+        
+        calendar_service = CropLifecycleCalendar()
+        calendar = calendar_service.generate_lifecycle_calendar(
+            crop=crop_name,
+            variety=variety,
+            planting_date=plot_data['planting_date'],
+            plot_id=plot_id
+        )
+        
+        # Find current stage
+        current_stage = None
+        for stage in calendar['stages']:
+            if days_since_planting >= stage['dap_start'] and days_since_planting <= stage['dap_end']:
+                current_stage = stage
+                break
+        
+        if not current_stage:
+            return {
+                "success": True,
+                "plot_id": plot_id,
+                "days_since_planting": days_since_planting,
+                "current_stage": None,
+                "message": "Plant may have reached harvest or data unavailable"
+            }
+        
+        # Calculate progress
+        stage_duration = current_stage['dap_end'] - current_stage['dap_start']
+        days_in_stage = days_since_planting - current_stage['dap_start']
+        progress_percentage = (days_in_stage / stage_duration) * 100
+        
+        return {
+            "success": True,
+            "plot_id": plot_id,
+            "days_since_planting": days_since_planting,
+            "current_stage": {
+                "name": current_stage['name'],
+                "dap_start": current_stage['dap_start'],
+                "dap_end": current_stage['dap_end'],
+                "duration_days": current_stage['duration_days'],
+                "progress_percentage": round(progress_percentage, 1),
+                "practices": current_stage.get('practices', []),
+                "monitoring": current_stage.get('monitoring', {})
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting current stage: {str(e)}")
+
+
+@router.get("/growth/{plot_id}/upcoming-practices")
+async def get_upcoming_practices(plot_id: str, days_ahead: int = 7):
+    """
+    Get upcoming practices for next N days
+    
+    Perfect for "What's Next" section in growth tracking UI
+    """
+    try:
+        if not LIFECYCLE_CALENDAR_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Lifecycle calendar service not available"
+            )
+        
+        supabase = supabase_admin
+        
+        # Get plot details
+        plot = supabase.table('digital_plots')\
+            .select('*')\
+            .eq('id', plot_id)\
+            .single()\
+            .execute()
+        
+        if not plot.data:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot_data = plot.data
+        
+        # Get lifecycle calendar
+        crop_name = plot_data.get('crop_name', 'maize').lower()
+        variety = plot_data.get('variety', 'h614').lower()
+        
+        calendar_service = CropLifecycleCalendar()
+        calendar = calendar_service.generate_lifecycle_calendar(
+            crop=crop_name,
+            variety=variety,
+            planting_date=plot_data['planting_date'],
+            plot_id=plot_id
+        )
+        
+        # Filter practices for next N days
+        now = datetime.utcnow()
+        future_date = now + timedelta(days=days_ahead)
+        
+        upcoming = []
+        for practice in calendar.get('practices', []):
+            practice_date = datetime.fromisoformat(practice['scheduled_date'])
+            if now <= practice_date <= future_date:
+                days_until = (practice_date - now).days
+                practice['days_until'] = days_until
+                upcoming.append(practice)
+        
+        # Sort by date
+        upcoming.sort(key=lambda x: x['scheduled_date'])
+        
+        return {
+            "success": True,
+            "plot_id": plot_id,
+            "days_ahead": days_ahead,
+            "upcoming_practices": upcoming,
+            "total_practices": len(upcoming)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting upcoming practices: {str(e)}")
+
+
+@router.get("/growth/{plot_id}/milestones")
+async def get_growth_milestones(plot_id: str):
+    """
+    Get key growth milestones for the plot
+    
+    Returns major events: planting, emergence, flowering, harvest
+    """
+    try:
+        if not LIFECYCLE_CALENDAR_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Lifecycle calendar service not available"
+            )
+        
+        supabase = supabase_admin
+        
+        # Get plot details
+        plot = supabase.table('digital_plots')\
+            .select('*')\
+            .eq('id', plot_id)\
+            .single()\
+            .execute()
+        
+        if not plot.data:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot_data = plot.data
+        
+        # Get lifecycle calendar
+        crop_name = plot_data.get('crop_name', 'maize').lower()
+        variety = plot_data.get('variety', 'h614').lower()
+        
+        calendar_service = CropLifecycleCalendar()
+        calendar = calendar_service.generate_lifecycle_calendar(
+            crop=crop_name,
+            variety=variety,
+            planting_date=plot_data['planting_date'],
+            plot_id=plot_id
+        )
+        
+        return {
+            "success": True,
+            "plot_id": plot_id,
+            "milestones": calendar.get('milestones', []),
+            "total_milestones": len(calendar.get('milestones', []))
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting milestones: {str(e)}")
+
+
+@router.get("/growth/{plot_id}/resource-plan")
+async def get_resource_plan(plot_id: str):
+    """
+    Get complete resource plan for the growing season
+    
+    Returns:
+    - Total labor hours
+    - Estimated costs
+    - Inputs needed (fertilizer, pesticides, etc.)
+    - Equipment required
+    """
+    try:
+        if not LIFECYCLE_CALENDAR_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Lifecycle calendar service not available"
+            )
+        
+        supabase = supabase_admin
+        
+        # Get plot details
+        plot = supabase.table('digital_plots')\
+            .select('*')\
+            .eq('id', plot_id)\
+            .single()\
+            .execute()
+        
+        if not plot.data:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot_data = plot.data
+        
+        # Get lifecycle calendar
+        crop_name = plot_data.get('crop_name', 'maize').lower()
+        variety = plot_data.get('variety', 'h614').lower()
+        
+        calendar_service = CropLifecycleCalendar()
+        calendar = calendar_service.generate_lifecycle_calendar(
+            crop=crop_name,
+            variety=variety,
+            planting_date=plot_data['planting_date'],
+            plot_id=plot_id
+        )
+        
+        return {
+            "success": True,
+            "plot_id": plot_id,
+            "resource_plan": calendar.get('resource_plan', {}),
+            "area_size": plot_data.get('area_size', 1.0),
+            "currency": "USD"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting resource plan: {str(e)}")
+
+
+@router.get("/growth/{plot_id}/risk-calendar")
+async def get_risk_calendar(plot_id: str):
+    """
+    Get stage-based risk calendar
+    
+    Returns pests and diseases likely to occur at each growth stage
+    """
+    try:
+        if not LIFECYCLE_CALENDAR_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Lifecycle calendar service not available"
+            )
+        
+        supabase = supabase_admin
+        
+        # Get plot details
+        plot = supabase.table('digital_plots')\
+            .select('*')\
+            .eq('id', plot_id)\
+            .single()\
+            .execute()
+        
+        if not plot.data:
+            raise HTTPException(status_code=404, detail="Plot not found")
+        
+        plot_data = plot.data
+        
+        # Get lifecycle calendar
+        crop_name = plot_data.get('crop_name', 'maize').lower()
+        variety = plot_data.get('variety', 'h614').lower()
+        
+        calendar_service = CropLifecycleCalendar()
+        calendar = calendar_service.generate_lifecycle_calendar(
+            crop=crop_name,
+            variety=variety,
+            planting_date=plot_data['planting_date'],
+            plot_id=plot_id
+        )
+        
+        return {
+            "success": True,
+            "plot_id": plot_id,
+            "risk_calendar": calendar.get('risk_calendar', []),
+            "total_risk_periods": len(calendar.get('risk_calendar', []))
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting risk calendar: {str(e)}")
+
+
+@router.get("/growth/calendar/ai-status")
+async def get_calendar_ai_status():
+    """
+    Check AI calendar features availability for growth tracking
+    
+    Shows which AI features are enabled for calendar optimization
+    """
+    try:
+        features_status = {
+            "lifecycle_calendar": LIFECYCLE_CALENDAR_AVAILABLE,
+            "weather_optimization": False,
+            "pest_detection": False,
+            "disease_detection": False,
+            "health_monitoring": False,
+            "yield_prediction": False
+        }
+        
+        # Check if model manager is available
+        if MODEL_MANAGER_AVAILABLE:
+            try:
+                model_manager = get_model_manager()
+                features_status["pest_detection"] = model_manager.is_model_available("pest_detection")
+                features_status["disease_detection"] = model_manager.is_model_available("disease_detection")
+                features_status["health_monitoring"] = model_manager.is_model_available("plant_health")
+                features_status["yield_prediction"] = model_manager.is_model_available("yield_prediction")
+            except Exception as e:
+                print(f"Error checking model manager: {e}")
+        
+        ready_count = sum(1 for v in features_status.values() if v)
+        total_features = len(features_status)
+        
+        return {
+            "success": True,
+            "features": features_status,
+            "summary": {
+                "ready": ready_count,
+                "total": total_features,
+                "percentage_ready": round((ready_count / total_features) * 100, 1)
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking AI status: {str(e)}")
 
 
 # ============================================================
