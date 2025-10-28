@@ -427,6 +427,12 @@ export default function FarmerDashboardScreen({ navigation }) {
               onPress={handleCalculateBudget}
             />
             <ActionButton
+              icon="chart-line"
+              label="Track Growth"
+              color="#009688"
+              onPress={() => navigation.navigate('GrowthTracking')}
+            />
+            <ActionButton
               icon="store"
               label="Marketplace"
               color="#673AB7"

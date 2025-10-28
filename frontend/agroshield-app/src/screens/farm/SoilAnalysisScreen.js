@@ -98,7 +98,7 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
                   <MaterialCommunityIcons
                     name="water"
                     size={48}
-                    color={theme.colors.primary}
+                    color="#5A9BD5"
                   />
                 </View>
               )}
@@ -121,7 +121,7 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
                   <MaterialCommunityIcons
                     name="weather-sunny"
                     size={48}
-                    color={theme.colors.accent}
+                    color="#F4A460"
                   />
                 </View>
               )}
@@ -161,7 +161,7 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
                   <MaterialCommunityIcons
                     name="brain"
                     size={32}
-                    color={theme.colors.primary}
+                    color="#6B8E23"
                   />
                   <View style={styles.mlInfo}>
                     <Text style={styles.soilType}>{analysis.soil_type?.toUpperCase()}</Text>
@@ -243,7 +243,7 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
                         <MaterialCommunityIcons
                           name="check-circle"
                           size={18}
-                          color={theme.colors.success}
+                          color="#6B8E23"
                         />
                         <Text style={styles.amendmentText}>{amendment}</Text>
                       </View>
@@ -313,7 +313,7 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
                     <MaterialCommunityIcons
                       name="check-circle"
                       size={20}
-                      color={theme.colors.success}
+                      color="#6B8E23"
                     />
                     <Text style={styles.recommendationText}>{rec}</Text>
                   </View>
@@ -329,9 +329,9 @@ const SoilAnalysisScreen = ({ route, navigation }) => {
 
 const NutrientBar = ({ label, level }) => {
   const getColor = () => {
-    if (level === 'high') return theme.colors.success;
-    if (level === 'medium') return theme.colors.accent;
-    return theme.colors.error;
+    if (level === 'high') return '#6B8E23'; // Olive green
+    if (level === 'medium') return '#D4A574'; // Tan/wheat
+    return '#A0826D'; // Brown
   };
 
   const getWidth = () => {
@@ -362,58 +362,73 @@ const NutrientBar = ({ label, level }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F3F0',
   },
   scrollContent: {
     padding: spacing.md,
   },
   card: {
     marginBottom: spacing.md,
-    elevation: 2,
+    elevation: 1,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#8B7355',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   cardTitle: {
     ...typography.h3,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#3E2723',
+    letterSpacing: 0.3,
   },
   fieldName: {
     ...typography.h3,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '700',
+    color: '#2C1810',
+    letterSpacing: 0.5,
   },
   fieldDetails: {
     ...typography.caption,
-    color: theme.colors.placeholder,
+    color: '#8B7355',
     marginTop: spacing.xs,
+    fontSize: 13,
   },
   instructions: {
     ...typography.body,
-    color: theme.colors.text,
+    color: '#5D4E37',
     marginBottom: spacing.md,
     textAlign: 'center',
+    lineHeight: 20,
+    fontSize: 13,
   },
   photoGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
   photoContainer: {
     flex: 1,
-    marginHorizontal: spacing.xs,
     alignItems: 'center',
   },
   photoLabel: {
     ...typography.caption,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '600',
+    color: '#3E2723',
     marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    fontSize: 11,
+    letterSpacing: 1,
   },
   photoPlaceholder: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 8,
+    backgroundColor: '#FAF8F5',
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderColor: '#D4C5B9',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -422,35 +437,48 @@ const styles = StyleSheet.create({
   photoPreview: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E8DED2',
   },
   photoButton: {
     width: '100%',
+    borderRadius: 8,
+    borderColor: '#8B7355',
   },
   analyzeButton: {
     marginTop: spacing.md,
+    borderRadius: 12,
+    backgroundColor: '#6B8E23',
+    elevation: 2,
   },
   buttonContent: {
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
   },
   textureRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   textureItem: {
     alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
   textureLabel: {
     ...typography.caption,
-    color: theme.colors.placeholder,
+    color: '#8B7355',
     marginBottom: spacing.xs,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   textureValue: {
     ...typography.h2,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
+    fontWeight: '700',
+    color: '#6B8E23',
+    fontSize: 28,
   },
   textureClassification: {
     flexDirection: 'row',
@@ -458,19 +486,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#E8DED2',
+    marginTop: spacing.xs,
   },
   classificationLabel: {
     ...typography.body,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '600',
+    color: '#3E2723',
     marginRight: spacing.sm,
+    fontSize: 13,
   },
   classificationChip: {
-    backgroundColor: theme.colors.primary + '30',
+    backgroundColor: '#8B7355',
+    paddingHorizontal: spacing.md,
   },
   nutrientBar: {
     marginBottom: spacing.lg,
+    paddingVertical: spacing.xs,
   },
   nutrientHeader: {
     flexDirection: 'row',
@@ -480,25 +512,29 @@ const styles = StyleSheet.create({
   },
   nutrientLabel: {
     ...typography.body,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '600',
+    color: '#3E2723',
+    fontSize: 14,
   },
   levelChip: {
     paddingHorizontal: spacing.sm,
+    borderRadius: 6,
   },
   levelText: {
     ...typography.caption,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
   progressBar: {
-    height: 8,
-    backgroundColor: theme.colors.border,
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: '#E8DED2',
+    borderRadius: 5,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 5,
   },
   recommendations: {
     marginTop: spacing.sm,
@@ -507,17 +543,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: spacing.md,
+    paddingVertical: spacing.xs,
   },
   recommendationText: {
     ...typography.body,
-    color: theme.colors.text,
+    color: '#5D4E37',
     marginLeft: spacing.sm,
     flex: 1,
+    lineHeight: 20,
+    fontSize: 13,
   },
   mlHeader: {
     flexDirection: 'row',
     marginBottom: spacing.md,
     alignItems: 'center',
+    backgroundColor: '#F9F7F4',
+    padding: spacing.md,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#6B8E23',
   },
   mlInfo: {
     flex: 1,
@@ -525,9 +569,11 @@ const styles = StyleSheet.create({
   },
   soilType: {
     ...typography.h3,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '700',
+    color: '#2C1810',
     textTransform: 'capitalize',
+    fontSize: 20,
+    letterSpacing: 0.5,
   },
   confidenceRow: {
     flexDirection: 'row',
@@ -536,70 +582,87 @@ const styles = StyleSheet.create({
   },
   confidenceLabel: {
     ...typography.caption,
-    color: theme.colors.placeholder,
+    color: '#8B7355',
     marginRight: spacing.xs,
+    fontSize: 12,
   },
   confidenceValue: {
     ...typography.body,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
+    fontWeight: '700',
+    color: '#6B8E23',
+    fontSize: 15,
   },
   modelText: {
     ...typography.caption,
-    color: '#666',
+    color: '#A0826D',
     fontStyle: 'italic',
     marginTop: spacing.xs,
+    fontSize: 11,
   },
   characteristicsSection: {
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: '#E8DED2',
   },
   sectionTitle: {
     ...typography.body,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '700',
+    color: '#3E2723',
     marginBottom: spacing.sm,
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   charGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: spacing.xs,
+    gap: spacing.sm,
   },
   charItem: {
-    width: '50%',
+    width: '48%',
     marginBottom: spacing.sm,
+    backgroundColor: '#FAF8F5',
+    padding: spacing.sm,
+    borderRadius: 8,
   },
   charLabel: {
     ...typography.caption,
-    color: theme.colors.placeholder,
+    color: '#8B7355',
     textTransform: 'capitalize',
+    fontSize: 11,
+    marginBottom: 2,
   },
   charValue: {
     ...typography.body,
     fontWeight: '600',
-    color: theme.colors.text,
+    color: '#3E2723',
     textTransform: 'capitalize',
+    fontSize: 14,
   },
   fertilitySection: {
     marginTop: spacing.md,
+    backgroundColor: '#F9F7F4',
+    padding: spacing.md,
+    borderRadius: 12,
   },
   fertilityBar: {
-    height: 20,
-    backgroundColor: theme.colors.border,
-    borderRadius: 10,
+    height: 24,
+    backgroundColor: '#E8DED2',
+    borderRadius: 12,
     overflow: 'hidden',
     marginVertical: spacing.sm,
   },
   fertilityFill: {
     height: '100%',
-    borderRadius: 10,
+    borderRadius: 12,
   },
   fertilityText: {
     ...typography.caption,
-    color: theme.colors.text,
+    color: '#5D4E37',
     textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
   },
   cropsSection: {
     marginTop: spacing.md,
@@ -608,11 +671,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: spacing.xs,
+    gap: spacing.xs,
   },
   cropChip: {
     marginRight: spacing.xs,
     marginBottom: spacing.xs,
-    backgroundColor: theme.colors.primary + '20',
+    backgroundColor: '#D4E7C5',
+    borderRadius: 8,
   },
   amendmentsSection: {
     marginTop: spacing.md,
@@ -621,12 +686,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: spacing.sm,
+    backgroundColor: '#FAF8F5',
+    padding: spacing.sm,
+    borderRadius: 8,
   },
   amendmentText: {
     ...typography.body,
-    color: theme.colors.text,
+    color: '#5D4E37',
     marginLeft: spacing.sm,
     flex: 1,
+    lineHeight: 20,
+    fontSize: 13,
   },
 });
 

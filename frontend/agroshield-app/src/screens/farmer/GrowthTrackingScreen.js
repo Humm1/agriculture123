@@ -86,22 +86,24 @@ export default function GrowthTrackingScreen({ route, navigation }) {
       console.log('📦 Full response data:', JSON.stringify(data, null, 2));
       
       if (data.success) {
-        console.log("✅ Plot details loaded:", data);
+        console.log("✅ Plot details loaded:", JSON.stringify(data, null, 2));
         console.log("📍 Location field type:", typeof data.plot?.location);
-        console.log("📍 Location field value:", data.plot?.location);
+        console.log("📍 Location field value:", JSON.stringify(data.plot?.location, null, 2));
         console.log("📊 Images count:", data.images?.length);
-        console.log("� Upcoming events count:", data.upcoming_events?.length);
-        console.log("�🔍 Checking AI analysis data...");
+        console.log("📅 Upcoming events count:", data.upcoming_events?.length);
+        console.log("🔍 Checking AI analysis data...");
         
         // Check for AI analysis in images
         if (data.images && data.images.length > 0) {
           data.images.forEach((img, idx) => {
-            console.log(`Image ${idx + 1}:`, {
+            console.log(`Image ${idx + 1}:`, JSON.stringify({
               id: img.id,
               type: img.image_type,
+              url: img.image_url || img.url,
+              uploaded_at: img.uploaded_at,
               has_ai_analysis: !!img.ai_analysis,
               ai_analysis_keys: img.ai_analysis ? Object.keys(img.ai_analysis) : []
-            });
+            }, null, 2));
             
             if (img.ai_analysis) {
               console.log(`  - Soil Health:`, img.ai_analysis.soil_health ? '✅ EXISTS' : '❌ MISSING');
@@ -484,10 +486,253 @@ export default function GrowthTrackingScreen({ route, navigation }) {
               console.log('📦 selectedPlotDetails keys:', Object.keys(selectedPlotDetails));
               console.log('📊 Images:', selectedPlotDetails.images?.length || 0);
               console.log('📅 Upcoming events:', selectedPlotDetails.upcoming_events?.length || 0);
-              console.log('🌱 Plot data:', selectedPlotDetails.plot);
+              console.log('🌱 Plot data:', JSON.stringify(selectedPlotDetails.plot, null, 2));
               
               return (
               <ScrollView style={styles.plotDetailsCard} nestedScrollEnabled={true}>
+                {/* Uploaded Images Gallery with ML Analysis */}
+                {selectedPlotDetails.images && selectedPlotDetails.images.length > 0 && (
+                  <View style={styles.imagesGallerySection}>
+                    <View style={styles.galleryHeader}>
+                      <Text style={styles.sectionTitle}>📸 Uploaded Images & ML Analysis</Text>
+                      <Text style={styles.gallerySubtitle}>
+                        {selectedPlotDetails.images.filter(img => img.ai_analysis).length} of {selectedPlotDetails.images.length} analyzed
+                      </Text>
+                    </View>
+                    {selectedPlotDetails.images.map((image, index) => {
+                      const hasAnalysis = image.ai_analysis && (
+                        image.ai_analysis.pest_disease_scan || 
+                        image.ai_analysis.soil_health
+                      );
+                      const imageUrl = image.image_url || image.url;
+                      
+                      return (
+                        <View key={image.id || index} style={styles.imageCard}>
+                          {/* Image Preview */}
+                          {imageUrl && (
+                            <Image 
+                              source={{ uri: imageUrl }}
+                              style={styles.uploadedImagePreview}
+                              resizeMode="cover"
+                            />
+                          )}
+                          
+                          <View style={styles.imageCardHeader}>
+                            <View style={styles.imageInfo}>
+                              <MaterialCommunityIcons 
+                                name={image.image_type === 'soil' ? 'texture-box' : 'leaf'} 
+                                size={24} 
+                                color="#6B8E23" 
+                              />
+                              <View style={styles.imageMetadata}>
+                                <Text style={styles.imageType}>
+                                  {image.image_type === 'soil' ? '🌱 Soil Sample' : '🌿 Crop Image'}
+                                </Text>
+                                <Text style={styles.imageTimestamp}>
+                                  {new Date(image.uploaded_at || image.created_at).toLocaleDateString()} at {new Date(image.uploaded_at || image.created_at).toLocaleTimeString()}
+                                </Text>
+                              </View>
+                            </View>
+                            
+                            {hasAnalysis && (
+                              <TouchableOpacity 
+                                style={styles.detailsButton}
+                                onPress={() => {
+                                  const analysisData = image.ai_analysis.pest_disease_scan || image.ai_analysis.soil_health;
+                                  const analysisType = image.ai_analysis.pest_disease_scan ? 'Pest & Disease' : 'Soil Health';
+                                  
+                                  // Create detailed analysis message
+                                  let detailsMessage = `📊 ${analysisType} Analysis\n\n`;
+                                  
+                                  if (image.ai_analysis.pest_disease_scan) {
+                                    const scan = image.ai_analysis.pest_disease_scan;
+                                    detailsMessage += `🏥 Health Status: ${scan.health_status || 'Unknown'}\n`;
+                                    detailsMessage += `⚠️ Risk Level: ${scan.risk_level || 'Low'}\n`;
+                                    detailsMessage += `🐛 Pests Detected: ${scan.detected_pests?.length || 0}\n`;
+                                    detailsMessage += `� Diseases Detected: ${scan.detected_diseases?.length || 0}\n\n`;
+                                    
+                                    if (scan.detected_pests && scan.detected_pests.length > 0) {
+                                      detailsMessage += `🐛 PESTS:\n`;
+                                      scan.detected_pests.forEach((pest, i) => {
+                                        detailsMessage += `\n${i + 1}. ${pest.pest_name}\n`;
+                                        detailsMessage += `   Scientific: ${pest.scientific_name}\n`;
+                                        detailsMessage += `   Severity: ${pest.severity}\n`;
+                                        detailsMessage += `   Confidence: ${(pest.confidence * 100).toFixed(1)}%\n`;
+                                      });
+                                    }
+                                    
+                                    if (scan.detected_diseases && scan.detected_diseases.length > 0) {
+                                      detailsMessage += `\n🦠 DISEASES:\n`;
+                                      scan.detected_diseases.forEach((disease, i) => {
+                                        detailsMessage += `\n${i + 1}. ${disease.disease_name}\n`;
+                                        detailsMessage += `   Scientific: ${disease.scientific_name}\n`;
+                                        detailsMessage += `   Severity: ${disease.severity}\n`;
+                                        detailsMessage += `   Confidence: ${(disease.confidence * 100).toFixed(1)}%\n`;
+                                      });
+                                    }
+                                    
+                                    if (scan.immediate_actions && scan.immediate_actions.length > 0) {
+                                      detailsMessage += `\n⚡ IMMEDIATE ACTIONS:\n`;
+                                      scan.immediate_actions.forEach((action, i) => {
+                                        detailsMessage += `${i + 1}. ${action}\n`;
+                                      });
+                                    }
+                                  }
+                                  
+                                  if (image.ai_analysis.soil_health) {
+                                    const soil = image.ai_analysis.soil_health;
+                                    detailsMessage += `🌱 Soil Type: ${soil.soil_type || 'Unknown'}\n`;
+                                    detailsMessage += `📊 Fertility Score: ${soil.fertility_score || 'N/A'}/10\n`;
+                                    detailsMessage += `🧪 pH Level: ${soil.ph_level || 'N/A'}\n`;
+                                    detailsMessage += `💧 Moisture: ${soil.moisture || 'N/A'}\n`;
+                                    detailsMessage += `🌡️ Temperature: ${soil.temperature || 'N/A'}°C\n\n`;
+                                    
+                                    if (soil.nutrients) {
+                                      detailsMessage += `🧪 NUTRIENTS:\n`;
+                                      detailsMessage += `   Nitrogen (N): ${soil.nutrients.nitrogen}\n`;
+                                      detailsMessage += `   Phosphorus (P): ${soil.nutrients.phosphorus}\n`;
+                                      detailsMessage += `   Potassium (K): ${soil.nutrients.potassium}\n\n`;
+                                    }
+                                    
+                                    if (soil.recommendations && soil.recommendations.length > 0) {
+                                      detailsMessage += `💡 RECOMMENDATIONS:\n`;
+                                      soil.recommendations.forEach((rec, i) => {
+                                        detailsMessage += `${i + 1}. ${rec}\n`;
+                                      });
+                                    }
+                                  }
+                                  
+                                  Alert.alert(
+                                    `🤖 ${analysisType} Analysis`,
+                                    detailsMessage,
+                                    [
+                                      {
+                                        text: 'View JSON',
+                                        onPress: () => {
+                                          Alert.alert(
+                                            'Raw Analysis Data',
+                                            JSON.stringify(analysisData, null, 2),
+                                            [{ text: 'Close' }]
+                                          );
+                                        }
+                                      },
+                                      { text: 'Close', style: 'cancel' }
+                                    ],
+                                    { cancelable: true }
+                                  );
+                                }}
+                              >
+                                <MaterialCommunityIcons name="information" size={20} color="#fff" />
+                                <Text style={styles.detailsButtonText}>Details</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                          
+                          {/* Analysis Summary */}
+                          {hasAnalysis ? (
+                            <View style={styles.analysisSummary}>
+                              {image.ai_analysis.pest_disease_scan && (
+                                <>
+                                  <View style={styles.summaryRow}>
+                                    <MaterialCommunityIcons name="shield-check" size={18} color="#4CAF50" />
+                                    <Text style={styles.summaryLabel}>Health:</Text>
+                                    <Text style={[styles.summaryValue, {
+                                      color: image.ai_analysis.pest_disease_scan.health_status === 'healthy' ? '#4CAF50' : '#FF5722'
+                                    }]}>
+                                      {image.ai_analysis.pest_disease_scan.health_status || 'Unknown'}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.summaryRow}>
+                                    <MaterialCommunityIcons name="alert" size={18} color="#FF9800" />
+                                    <Text style={styles.summaryLabel}>Risk:</Text>
+                                    <Text style={styles.summaryValue}>
+                                      {image.ai_analysis.pest_disease_scan.risk_level || 'Low'}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.summaryRow}>
+                                    <MaterialCommunityIcons name="bug" size={18} color="#F44336" />
+                                    <Text style={styles.summaryLabel}>Issues:</Text>
+                                    <Text style={styles.summaryValue}>
+                                      {(image.ai_analysis.pest_disease_scan.detected_pests?.length || 0) + 
+                                       (image.ai_analysis.pest_disease_scan.detected_diseases?.length || 0)} detected
+                                    </Text>
+                                  </View>
+                                  {image.ai_analysis.pest_disease_scan.confidence && (
+                                    <View style={styles.summaryRow}>
+                                      <MaterialCommunityIcons name="gauge" size={18} color="#2196F3" />
+                                      <Text style={styles.summaryLabel}>Confidence:</Text>
+                                      <Text style={styles.summaryValue}>
+                                        {(image.ai_analysis.pest_disease_scan.confidence * 100).toFixed(1)}%
+                                      </Text>
+                                    </View>
+                                  )}
+                                </>
+                              )}
+                              
+                              {image.ai_analysis.soil_health && (
+                                <>
+                                  <View style={styles.summaryRow}>
+                                    <MaterialCommunityIcons name="sprout" size={18} color="#6B8E23" />
+                                    <Text style={styles.summaryLabel}>Soil Type:</Text>
+                                    <Text style={styles.summaryValue}>
+                                      {image.ai_analysis.soil_health.soil_type || 'Unknown'}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.summaryRow}>
+                                    <MaterialCommunityIcons name="chart-line" size={18} color="#4CAF50" />
+                                    <Text style={styles.summaryLabel}>Fertility:</Text>
+                                    <Text style={styles.summaryValue}>
+                                      {image.ai_analysis.soil_health.fertility_score || 'N/A'}/10
+                                    </Text>
+                                  </View>
+                                  <View style={styles.summaryRow}>
+                                    <MaterialCommunityIcons name="flask" size={18} color="#2196F3" />
+                                    <Text style={styles.summaryLabel}>pH Level:</Text>
+                                    <Text style={styles.summaryValue}>
+                                      {image.ai_analysis.soil_health.ph_level || 'N/A'}
+                                    </Text>
+                                  </View>
+                                  {image.ai_analysis.soil_health.nutrients && (
+                                    <View style={styles.nutrientsGrid}>
+                                      <View style={styles.nutrientItem}>
+                                        <Text style={styles.nutrientLabel}>N</Text>
+                                        <Text style={styles.nutrientValue}>
+                                          {image.ai_analysis.soil_health.nutrients.nitrogen}
+                                        </Text>
+                                      </View>
+                                      <View style={styles.nutrientItem}>
+                                        <Text style={styles.nutrientLabel}>P</Text>
+                                        <Text style={styles.nutrientValue}>
+                                          {image.ai_analysis.soil_health.nutrients.phosphorus}
+                                        </Text>
+                                      </View>
+                                      <View style={styles.nutrientItem}>
+                                        <Text style={styles.nutrientLabel}>K</Text>
+                                        <Text style={styles.nutrientValue}>
+                                          {image.ai_analysis.soil_health.nutrients.potassium}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  )}
+                                </>
+                              )}
+                            </View>
+                          ) : (
+                            <View style={styles.noAnalysisBox}>
+                              <MaterialCommunityIcons name="clock-outline" size={20} color="#999" />
+                              <Text style={styles.noAnalysisText}>
+                                {image.image_type === 'initial' 
+                                  ? 'Initial photo - No analysis needed' 
+                                  : 'Analysis pending... Upload a new image to trigger ML analysis'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
                 {/* AI Disease & Pest Detection */}
                 {(() => {
                   const pestAnalysis = selectedPlotDetails.images?.find(
@@ -1763,6 +2008,135 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  // Uploaded Images Gallery Styles
+  imagesGallerySection: {
+    backgroundColor: '#F9F7F4',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  imageCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E8DED2',
+    elevation: 2,
+    shadowColor: '#8B7355',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  uploadedImagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#F5F3F0',
+  },
+  imageCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  imageInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  imageMetadata: {
+    marginLeft: 10,
+  },
+  imageType: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3E2723',
+  },
+  imageTimestamp: {
+    fontSize: 11,
+    color: '#8B7355',
+    marginTop: 2,
+  },
+  detailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6B8E23',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+    elevation: 2,
+  },
+  detailsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  analysisSummary: {
+    backgroundColor: '#FAF8F5',
+    borderRadius: 8,
+    padding: 12,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: '#5D4E37',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  summaryValue: {
+    fontSize: 13,
+    color: '#3E2723',
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  nutrientsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E8DED2',
+  },
+  nutrientItem: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    minWidth: 60,
+  },
+  nutrientLabel: {
+    fontSize: 11,
+    color: '#8B7355',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  nutrientValue: {
+    fontSize: 14,
+    color: '#6B8E23',
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  noAnalysisBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+  },
+  noAnalysisText: {
+    fontSize: 13,
+    color: '#999',
+    fontStyle: 'italic',
   },
   // JSON Dashboard Styles
   sectionHeader: {

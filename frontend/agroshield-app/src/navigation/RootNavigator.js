@@ -69,10 +69,6 @@ const FarmerTabs = () => (
           iconName = 'view-dashboard';
         } else if (route.name === 'Marketplace') {
           iconName = 'store';
-        } else if (route.name === 'MyListings') {
-          iconName = 'format-list-bulleted';
-        } else if (route.name === 'Profile') {
-          iconName = 'account';
         }
 
         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
@@ -266,12 +262,6 @@ const BuyerTabs = () => (
 
         if (route.name === 'Browse') {
           iconName = 'shopping';
-        } else if (route.name === 'MyOrders') {
-          iconName = 'clipboard-list';
-        } else if (route.name === 'SupplyForecast') {
-          iconName = 'chart-line';
-        } else if (route.name === 'Profile') {
-          iconName = 'account';
         }
 
         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
